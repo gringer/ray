@@ -26,9 +26,12 @@
 #include <memory/RingAllocator.h>
 #include <communication/VirtualCommunicator.h>
 #include <stdint.h>
+#include <memory/MyAllocator.h>
 #include <structures/ArrayOfReads.h>
+#include <structures/DynamicVector.h>
 
-/* this class is a worker for sequence indexing
+/**
+ * this class is a worker for sequence indexing
  * Optimal read markers are selected by IndexerWorker
  */
 class IndexerWorker{
@@ -50,12 +53,13 @@ class IndexerWorker{
 	bool m_vertexIsDone;
 	bool m_coverageRequested;
 	bool m_fetchedCoverageValues;
+	MyAllocator*m_allocator;
 
-	vector<Kmer> m_vertices;
-	vector<int> m_coverages;
+	DynamicVector<Kmer> m_vertices;
+	DynamicVector<int> m_coverages;
 public:
 	void constructor(int sequenceId,char*sequence,Parameters*parameters,RingAllocator*outboxAllocator,
-		VirtualCommunicator*vc,uint64_t workerId,ArrayOfReads*a);
+		VirtualCommunicator*vc,uint64_t workerId,ArrayOfReads*a,MyAllocator*allocator);
 	bool isDone();
 	void work();
 	uint64_t getWorkerId();

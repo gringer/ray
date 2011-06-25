@@ -23,15 +23,14 @@
 #define _GridTable
 
 #include <structures/Kmer.h>
-#include <graph/VertexTable.h>
 #include <memory/MyAllocator.h>
-#include <memory/OnDiskAllocator.h>
+#include <graph/KmerAcademy.h>
 #include <core/Parameters.h>
 #include <structures/Vertex.h>
 
 class GridTable{
+	KmerAcademy m_kmerAcademy;
 	Parameters*m_parameters;
-	VertexTable m_vertexTable;
 	int m_rank;
 	uint64_t m_size;
 	bool m_inserted;
@@ -72,6 +71,11 @@ public:
 	void clearDirections(Kmer*a);
 	void buildData(Parameters*a);
 	bool isAssembled(Kmer*a);
+
+	bool insertedInAcademy();
+	KmerCandidate*insertInAcademy(Kmer*key);
+	void freezeAcademy();
+	KmerAcademy*getKmerAcademy();
 };
 
 #endif

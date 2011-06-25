@@ -21,7 +21,7 @@
 
 #include <memory/malloc_types.h>
 #include <assert.h>
-#include <graph/VertexTable.h>
+#include <graph/KmerAcademy.h>
 #include <core/common_functions.h>
 #include <iostream>
 #include <cryptography/crypto.h>
@@ -30,16 +30,20 @@
 #include <core/Parameters.h>
 using namespace std;
 
-void VertexTable::constructor(int rank,MyAllocator*allocator,Parameters*parameters){
+void KmerAcademy::constructor(int rank,Parameters*parameters){
 	m_parameters=parameters;
-	m_gridAllocator=allocator;
 	m_size=0;
+	int chunkSize=16777216; // 16 MiB
+	m_allocator.constructor(chunkSize,RAY_MALLOC_TYPE_KMER_ACADEMY,
+		m_parameters->showMemoryAllocations());
+
 	m_inserted=false;
 	m_gridSize=4194304;
-	int bytes1=m_gridSize*sizeof(VertexData*);
-	m_gridData=(VertexData**)__Malloc(bytes1,RAY_MALLOC_TYPE_VERTEX_TABLE_DATA,m_parameters->showMemoryAllocations());
+	m_frozen=false;
+	int bytes1=m_gridSize*sizeof(KmerCandidate*);
 	int bytes2=m_gridSize*sizeof(uint16_t);
-	m_gridSizes=(uint16_t*)__Malloc(bytes2,RAY_MALLOC_TYPE_VERTEX_TABLE_SIZES,m_parameters->showMemoryAllocations());
+	m_gridData=(KmerCandidate**)__Malloc(bytes1,RAY_MALLOC_TYPE_KMER_ACADEMY,m_parameters->showMemoryAllocations());
+	m_gridSizes=(uint16_t*)__Malloc(bytes2,RAY_MALLOC_TYPE_KMER_ACADEMY,m_parameters->showMemoryAllocations());
 
 	if(m_parameters->showMemoryUsage()){
 		showMemoryUsage(rank);
@@ -51,19 +55,20 @@ void VertexTable::constructor(int rank,MyAllocator*allocator,Parameters*paramete
 	}
 }
 
-uint64_t VertexTable::size(){
+uint64_t KmerAcademy::size(){
 	return m_size;
 }
 
-VertexData*VertexTable::find(Kmer*key){
+KmerCandidate*KmerAcademy::find(Kmer*key){
 	Kmer lowerKey;
-	int bin=hash_function_2(key,m_wordSize,&lowerKey,m_parameters->getColorSpaceMode())%m_gridSize;
+	int bin=hash_function_2(key,m_parameters->getWordSize(),&lowerKey,m_parameters->getColorSpaceMode())%m_gridSize;
 
 	if(key->isLower(&lowerKey)){
 		lowerKey=*key;
+
 	}
 	for(int i=0;i<m_gridSizes[bin];i++){
-		VertexData*gridEntry=m_gridData[bin]+i;
+		KmerCandidate*gridEntry=m_gridData[bin]+i;
 		if(gridEntry->m_lowerKey.isEqual(&lowerKey)){
 			return move(bin,i);
 		}
@@ -71,33 +76,30 @@ VertexData*VertexTable::find(Kmer*key){
 	return NULL;
 }
 
-VertexData*VertexTable::insert(Kmer*key){
+KmerCandidate*KmerAcademy::insert(Kmer*key){
 	Kmer lowerKey;
 	m_inserted=false;
-	int bin=hash_function_2(key,m_wordSize,&lowerKey,m_parameters->getColorSpaceMode())%m_gridSize;
+	int bin=hash_function_2(key,m_parameters->getWordSize(),&lowerKey,m_parameters->getColorSpaceMode())%m_gridSize;
 	if(key->isLower(&lowerKey)){
 		lowerKey=*key;
 	}
 	for(int i=0;i<m_gridSizes[bin];i++){
-		VertexData*gridEntry=m_gridData[bin]+i;
+		KmerCandidate*gridEntry=m_gridData[bin]+i;
 		if(gridEntry->m_lowerKey.isEqual(&lowerKey)){
 			//cout<<"Found "<<key<<" in bin "<<bin<<endl;
 			return move(bin,i);
 		}
 	}
-	if(true){
-		VertexData*newEntries=(VertexData*)m_gridAllocator->allocate((m_gridSizes[bin]+1)*sizeof(VertexData));
-		for(int i=0;i<m_gridSizes[bin];i++){
-			newEntries[i]=m_gridData[bin][i];
-		}
-		if(m_gridSizes[bin]!=0){
-			m_gridAllocator->free(m_gridData[bin],m_gridSizes[bin]*sizeof(VertexData));
-		}
-		m_gridData[bin]=newEntries;
+	KmerCandidate*newEntries=(KmerCandidate*)m_allocator.allocate((m_gridSizes[bin]+1)*sizeof(KmerCandidate));
+	for(int i=0;i<m_gridSizes[bin];i++){
+		newEntries[i]=m_gridData[bin][i];
 	}
+	if(m_gridSizes[bin]!=0){
+		m_allocator.free(m_gridData[bin],m_gridSizes[bin]*sizeof(KmerCandidate));
+	}
+	m_gridData[bin]=newEntries;
 
 	m_gridData[bin][m_gridSizes[bin]].m_lowerKey=lowerKey;
-	m_gridData[bin][m_gridSizes[bin]].constructor();
 	int oldSize=m_gridSizes[bin];
 	m_gridSizes[bin]++;
 	// check overflow
@@ -107,14 +109,11 @@ VertexData*VertexTable::insert(Kmer*key){
 	return move(bin,m_gridSizes[bin]-1);
 }
 
-bool VertexTable::inserted(){
+bool KmerAcademy::inserted(){
 	return m_inserted;
 }
 
-void VertexTable::remove(Kmer*a){
-}
-
-VertexData*VertexTable::getElementInBin(int bin,int element){
+KmerCandidate*KmerAcademy::getElementInBin(int bin,int element){
 	#ifdef ASSERT
 	assert(bin<getNumberOfBins());
 	assert(element<getNumberOfElementsInBin(bin));
@@ -122,31 +121,15 @@ VertexData*VertexTable::getElementInBin(int bin,int element){
 	return m_gridData[bin]+element;
 }
 
-int VertexTable::getNumberOfElementsInBin(int bin){
+int KmerAcademy::getNumberOfElementsInBin(int bin){
 	#ifdef ASSERT
 	assert(bin<getNumberOfBins());
 	#endif
 	return m_gridSizes[bin];
 }
 
-int VertexTable::getNumberOfBins(){
+int KmerAcademy::getNumberOfBins(){
 	return m_gridSize;
-}
-
-MyAllocator*VertexTable::getAllocator(){
-	return m_gridAllocator;
-}
-
-void VertexTable::freeze(){
-	m_frozen=true;
-}
-
-void VertexTable::unfreeze(){
-	m_frozen=false;
-}
-
-bool VertexTable::frozen(){
-	return m_frozen;
 }
 
 /*
@@ -160,11 +143,11 @@ bool VertexTable::frozen(){
  *
  *
  */
-VertexData*VertexTable::move(int bin,int item){
+KmerCandidate*KmerAcademy::move(int bin,int item){
 	if(m_frozen){
 		return m_gridData[bin]+item;
 	}
-	VertexData tmp;
+	KmerCandidate tmp;
 	#ifdef ASSERT
 	assert(item<getNumberOfElementsInBin(bin));
 	#endif
@@ -176,46 +159,27 @@ VertexData*VertexTable::move(int bin,int item){
 	return m_gridData[bin];
 }
 
-void VertexTable::setWordSize(int w){
-	m_wordSize=w;
+void KmerAcademy::freeze(){
+	m_frozen=true;
 }
 
-void VertexTable::addRead(Kmer*a,ReadAnnotation*e){
-	VertexData*i=insert(a);
-	i->addRead(a,e);
-	#ifdef ASSERT
-	ReadAnnotation*reads=i->getReads(a);
-	assert(reads!=NULL);
-	#endif
-}
-
-ReadAnnotation*VertexTable::getReads(Kmer*a){
-	VertexData*i=find(a);
-	if(i==NULL){
-		return NULL;
+void KmerAcademy::destructor(){
+	if(m_parameters->showMemoryUsage()){
+		showMemoryUsage(m_parameters->getRank());
 	}
-	ReadAnnotation*reads=i->getReads(a);
-	return reads;
-}
 
-void VertexTable::addDirection(Kmer*a,Direction*d){
-	VertexData*i=insert(a);
-	i->addDirection(a,d);
-}
+	int bytes1=m_gridSize*sizeof(KmerCandidate*);
+	int bytes2=m_gridSize*sizeof(uint16_t);
+	__Free(m_gridData,RAY_MALLOC_TYPE_KMER_ACADEMY,m_parameters->showMemoryAllocations());
+	__Free(m_gridSizes,RAY_MALLOC_TYPE_KMER_ACADEMY,m_parameters->showMemoryAllocations());
+	uint64_t freed=bytes1+bytes2;
+	freed+=m_allocator.getNumberOfChunks()*m_allocator.getChunkSize();
+	m_allocator.clear();
+	
+	if(m_parameters->showMemoryUsage())
+		cout<<"Rank "<<m_parameters->getRank()<<": Freeing unused assembler memory: "<<freed/1024<<" KiB freed"<<endl;
 
-vector<Direction> VertexTable::getDirections(Kmer*a){
-	VertexData*i=find(a);
-	if(i==NULL){
-		vector<Direction> p;
-		return p;
-	}
-	return i->getDirections(a);
-}
-
-void VertexTable::clearDirections(Kmer*a){
-	VertexData*i=find(a);
-	if(i!=NULL){
-		i->clearDirections(a);
+	if(m_parameters->showMemoryUsage()){
+		showMemoryUsage(m_parameters->getRank());
 	}
 }
-

@@ -30,6 +30,7 @@
 
 void GridTable::constructor(int rank,MyAllocator*allocator,Parameters*parameters){
 	m_parameters=parameters;
+	m_kmerAcademy.constructor(rank,m_parameters);
 	m_gridAllocatorOnDisk=allocator;
 	m_size=0;
 	m_inserted=false;
@@ -69,6 +70,10 @@ Vertex*GridTable::find(Kmer*key){
 	return NULL;
 }
 
+KmerCandidate*GridTable::insertInAcademy(Kmer*key){
+	return m_kmerAcademy.insert(key);
+}
+
 Vertex*GridTable::insert(Kmer*key){
 	Kmer lowerKey;
 	m_inserted=false;
@@ -103,6 +108,10 @@ Vertex*GridTable::insert(Kmer*key){
 	return move(bin,m_gridSizes[bin]-1);
 }
 
+bool GridTable::insertedInAcademy(){
+	return m_kmerAcademy.inserted();
+}
+
 bool GridTable::inserted(){
 	return m_inserted;
 }
@@ -131,10 +140,6 @@ int GridTable::getNumberOfBins(){
 
 MyAllocator*GridTable::getAllocator(){
 	return m_gridAllocatorOnDisk;
-}
-
-MyAllocator*GridTable::getSecondAllocator(){
-	return m_vertexTable.getAllocator();
 }
 
 void GridTable::freeze(){
@@ -178,19 +183,6 @@ Vertex*GridTable::move(int bin,int item){
 
 void GridTable::setWordSize(int w){
 	m_wordSize=w;
-	m_vertexTable.setWordSize(w);
-}
-
-void GridTable::addRead(Kmer*a,ReadAnnotation*e){
-	m_vertexTable.addRead(a,e);
-}
-
-ReadAnnotation*GridTable::getReads(Kmer*a){
-	return m_vertexTable.getReads(a);
-}
-
-void GridTable::addDirection(Kmer*a,Direction*d){
-	m_vertexTable.addDirection(a,d);
 }
 
 bool GridTable::isAssembled(Kmer*a){
@@ -198,14 +190,50 @@ bool GridTable::isAssembled(Kmer*a){
 	return getDirections(a).size()>0||getDirections(&reverse).size()>0;
 }
 
+void GridTable::freezeAcademy(){
+	m_kmerAcademy.freeze();
+}
+
+KmerAcademy*GridTable::getKmerAcademy(){
+	return &m_kmerAcademy;
+}
+
+void GridTable::addRead(Kmer*a,ReadAnnotation*e){
+	Vertex*i=insert(a);
+	i->addRead(a,e);
+	#ifdef ASSERT
+	ReadAnnotation*reads=i->getReads(a);
+	assert(reads!=NULL);
+	#endif
+}
+
+ReadAnnotation*GridTable::getReads(Kmer*a){
+	Vertex*i=find(a);
+	if(i==NULL){
+		return NULL;
+	}
+	ReadAnnotation*reads=i->getReads(a);
+	return reads;
+}
+
+void GridTable::addDirection(Kmer*a,Direction*d){
+	Vertex*i=insert(a);
+	i->addDirection(a,d);
+}
+
 vector<Direction> GridTable::getDirections(Kmer*a){
-	return m_vertexTable.getDirections(a);
+	Vertex*i=find(a);
+	if(i==NULL){
+		vector<Direction> p;
+		return p;
+	}
+	return i->getDirections(a);
 }
 
 void GridTable::clearDirections(Kmer*a){
-	m_vertexTable.clearDirections(a);
+	Vertex*i=find(a);
+	if(i!=NULL){
+		i->clearDirections(a);
+	}
 }
 
-void GridTable::buildData(Parameters*a){
-	m_vertexTable.constructor(m_rank,m_gridAllocatorOnDisk,a);
-}

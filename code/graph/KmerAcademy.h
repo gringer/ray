@@ -19,51 +19,45 @@
 
 */
 
-#ifndef _VertexTable
-#define _VertexTable
+#ifndef _KmerAcademy_H
+#define _KmerAcademy_H
 
 #include <memory/MyAllocator.h>
-#include <structures/VertexData.h>
-#include <memory/OnDiskAllocator.h>
+#include <structures/Kmer.h>
 #include <core/Parameters.h>
+#include <stdint.h>
 
-class VertexTable{
+class KmerCandidate{
+public:
+	Kmer m_lowerKey;
+	uint8_t m_count;
+};
+
+class KmerAcademy{
 	Parameters*m_parameters;
 	uint64_t m_size;
 	bool m_inserted;
-	MyAllocator*m_gridAllocator;
-	VertexData**m_gridData;
+	MyAllocator m_allocator;
+	KmerCandidate**m_gridData;
 	uint16_t*m_gridSizes;
 	int m_gridSize;
 	bool m_frozen;
-	int m_wordSize;
 
 	/**
  *   move the item in front of the others
  */
-	VertexData*move(int bin,int item);
+	KmerCandidate*move(int bin,int item);
 public:
-	void constructor(int rank,MyAllocator*allocator,Parameters*a);
-	void setWordSize(int w);
+	void constructor(int rank,Parameters*a);
 	uint64_t size();
-	VertexData*find(Kmer*key);
-	VertexData*insert(Kmer*key);
+	KmerCandidate*find(Kmer*key);
+	KmerCandidate*insert(Kmer*key);
 	bool inserted();
-	void remove(Kmer*a);
-	VertexData*getElementInBin(int bin,int element);
+	KmerCandidate*getElementInBin(int bin,int element);
 	int getNumberOfElementsInBin(int bin);
 	int getNumberOfBins();
-	MyAllocator*getAllocator();
 	void freeze();
-	void unfreeze();
-	bool frozen();
-
-	void addRead(Kmer*a,ReadAnnotation*e);
-	ReadAnnotation*getReads(Kmer*a);
-	void addDirection(Kmer*a,Direction*d);
-	vector<Direction> getDirections(Kmer*a);
-	void clearDirections(Kmer*a);
-
+	void destructor();
 };
 
 #endif
