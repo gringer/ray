@@ -9,6 +9,6 @@ for i in $(ls *.sh|grep -v main.sh)
 do
 	echo "Test Suite: $i"
 	bash $i
-done 
+done
 
-) &> UnitTests.txt
+) | tee UnitTests.txt

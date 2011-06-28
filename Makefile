@@ -253,6 +253,11 @@ readSimulator/VirtualNextGenSequencer: readSimulator/simulatePairedReads.cpp
 	@$(CXX) -o $@ $< $(CXXFLAGS)
 	@echo "  CXX $<"
 
+tests/UnitTests.txt: code/Ray tests/*.cpp tests/*.sh
+	cd tests; ./main.sh
+
+tests: tests/UnitTests.txt
+
 clean:
 	@rm -f $(TARGETS) $(obj-y) showOptions PREFIX TARGETS
 	@echo CLEAN
