@@ -25,6 +25,7 @@
 #include <string>
 #include <stdint.h>
 #include <vector>
+#include <format/ColorSpaceCodec.h>
 #include <memory/MyAllocator.h>
 #include <structures/PairedRead.h>
 #include <memory/OnDiskAllocator.h>
@@ -53,8 +54,10 @@ class Read{
 	uint8_t m_forwardOffset;
 	uint8_t m_reverseOffset;
 
-	void clean(string sequence);
-	void trim(string sequence);
+	typedef ColorSpaceCodec CSC; // makes calling static functions a bit less painful
+
+	string clean(string sequence);
+	string trim(string sequence);
 public:
 	Read(); // needed for repeated reads (assembler/seedExtender.cpp:1034)
 	Read(uint8_t*seq,int length); // raw sequence
@@ -77,6 +80,7 @@ public:
 	void setReverseOffset(int a);
 	int getForwardOffset();
 	int getReverseOffset();
+	static bool check();
 } ATTRIBUTE_PACKED;
 
 #endif

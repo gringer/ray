@@ -16,7 +16,6 @@
     You have received a copy of the GNU General Public License
     along with this program (COPYING).  
 	see <http://www.gnu.org/licenses/>
-
 */
 
 #include <memory/RingAllocator.h>

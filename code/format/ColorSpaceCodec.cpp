@@ -80,7 +80,7 @@ char ColorSpaceCodec::csIntToCS(uint8_t tInt, bool doubleEncoding){
  * (i.e. double encoded) or [0123] is not considered a valid colour-space
  * character, so is converted to 4.
  */
-int ColorSpaceCodec::csChrToInt(char tChr){
+uint8_t ColorSpaceCodec::csChrToInt(char tChr){
 	switch(toupper(tChr)){
 	case 'A':
 	case '0':
@@ -108,7 +108,7 @@ int ColorSpaceCodec::csChrToInt(char tChr){
  * Convert base-space character to a number. Anything other than [ACGT] is not
  * considered a valid base-space character, so is converted to 4.
  */
-int ColorSpaceCodec::bsChrToInt(char tChr){
+uint8_t ColorSpaceCodec::bsChrToInt(char tChr){
 	switch(toupper(tChr)){
 	case 'A':
 		return(0);
@@ -143,10 +143,11 @@ bool ColorSpaceCodec::isColorSpace(string sequence){
 	return false;
 }
 
-void ColorSpaceCodec::transformCStoDE(string csInput){
+string ColorSpaceCodec::transformCStoDE(string csInput){
 	for(string::iterator it = csInput.begin(); it < csInput.end(); it++){
 		*it = bsBases[csChrToInt(*it)];
 	}
+	return csInput;
 }
 
 
@@ -228,45 +229,45 @@ string ColorSpaceCodec::encodeBStoCS(string bsInput){
 }
 
 bool ColorSpaceCodec::check(){
-	ColorSpaceCodec cd;
+	typedef ColorSpaceCodec CSC;
 	string csSeq1("T3.020000223213003122002213101232303020002301033000");
 	string cConv1F("TANNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN");
 	string csSeq2("T32002333220000303130320033020032123301032223033002");
 	string cConv2F("TAGGGATATCTTTTTAATGCCGAAATAAGGGCTGATAACCGAGATTATTTC");
 	string cConv2R("GAAATAATCTCGGTTATCAGCCCTTATTTCGGCATTAAAAAGATATCCCTA");
 	cout << "1: checking colour-space decode (junk characters)... ";
-	if(cd.decodeCStoBS(csSeq1).compare(cConv1F) != 0){
+	if(CSC::decodeCStoBS(csSeq1).compare(cConv1F) != 0){
 		cout << "Decode failed:\n"
 				<< csSeq1 << endl << "->\n"
-				<< cd.decodeCStoBS(csSeq1) << endl
+				<< CSC::decodeCStoBS(csSeq1) << endl
 				<< cConv1F << " expected\n";
-	} else { cout << "SUCCESS!\n"; }
+	} else { cout << "success!\n"; }
 	cout << "2: checking colour-space decode (fully informative sequence)... ";
-	if(cd.decodeCStoBS(csSeq2).compare(cConv2F) != 0){
+	if(CSC::decodeCStoBS(csSeq2).compare(cConv2F) != 0){
 		cout << "Decode failed:\n"
 				<< csSeq2 << endl << "->\n"
-				<< cd.decodeCStoBS(csSeq2) << endl
+				<< CSC::decodeCStoBS(csSeq2) << endl
 				<< cConv2F << " expected\n";
-	} else { cout << "SUCCESS!\n"; }
+	} else { cout << "success!\n"; }
 	cout << "3: checking colour-space decode (inverse function actions)... ";
-	if(cd.encodeBStoCS(cd.decodeCStoBS(csSeq2)).compare(csSeq2) != 0){
+	if(CSC::encodeBStoCS(CSC::decodeCStoBS(csSeq2)).compare(csSeq2) != 0){
 		cout << "Encode+Decode failed... encoding is not the inverse of decoding "
 				<< "for fully informative input:\n"
 				<< csSeq2 << endl << "->\n"
-				<< cd.decodeCStoBS(csSeq2) << "->\n"
-				<< cd.encodeBStoCS(cd.decodeCStoBS(csSeq2)) << endl
+				<< CSC::decodeCStoBS(csSeq2) << "->\n"
+				<< CSC::encodeBStoCS(CSC::decodeCStoBS(csSeq2)) << endl
 				<< csSeq2 << " expected\n";
-	} else { cout << "SUCCESS!\n"; }
+	} else { cout << "success!\n"; }
 	cout << "4: checking colour-space decode (reverse decode)... ";
-	if(cd.decodeCStoBS(csSeq2,true).compare(cConv2R) != 0){
+	if(CSC::decodeCStoBS(csSeq2,true).compare(cConv2R) != 0){
 		cout << "Reverse complement decode (CSRC) failed:\n"
 				<< csSeq2 << endl << "->\n"
-				<< cd.decodeCStoBS(csSeq2,true) << endl
+				<< CSC::decodeCStoBS(csSeq2,true) << endl
 				<< cConv2R << " expected\n";
-	} else { cout << "SUCCESS!\n"; }
-	return ((cd.decodeCStoBS(csSeq1).compare(cConv1F) == 0) &&
-			(cd.decodeCStoBS(csSeq2).compare(cConv2F) == 0) &&
-			(cd.encodeBStoCS(cd.decodeCStoBS(csSeq2)).compare(csSeq2) == 0) &&
-			(cd.decodeCStoBS(csSeq2,true).compare(cConv2R) == 0)
+	} else { cout << "success!\n"; }
+	return ((CSC::decodeCStoBS(csSeq1).compare(cConv1F) == 0) &&
+			(CSC::decodeCStoBS(csSeq2).compare(cConv2F) == 0) &&
+			(CSC::encodeBStoCS(CSC::decodeCStoBS(csSeq2)).compare(csSeq2) == 0) &&
+			(CSC::decodeCStoBS(csSeq2,true).compare(cConv2R) == 0)
 			);
 }

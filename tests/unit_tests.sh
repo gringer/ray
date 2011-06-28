@@ -23,5 +23,15 @@ g++ $CODE/memory/malloc_types.cpp  $CODE/structures/Vertex.cpp test_kmer.cpp $CO
 ./a.out \
 TGAAATGGAAATGGTCTGGGAAAAACAACTAAAAGATATTAT
 
-g++ $CODE/format/ColorSpaceCodec.cpp $CODE/core/common_functions.cpp $CODE/structures/Kmer.cpp $CODE/cryptography/crypto.cpp test_cscodec.cpp -I$CODE -I..
+CODE=../code; \
+g++ $CODE/format/ColorSpaceCodec.cpp \
+    $CODE/structures/Read.cpp \
+    $CODE/core/common_functions.cpp \
+    $CODE/memory/malloc_types.cpp \
+    $CODE/memory/allocator.cpp \
+    $CODE/memory/MyAllocator.cpp \
+    $CODE/memory/ReusableMemoryStore.cpp \
+    $CODE/structures/Kmer.cpp \
+    $CODE/cryptography/crypto.cpp \
+    unit_tests.cpp -I$CODE -I..
 ./a.out

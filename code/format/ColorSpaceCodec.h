@@ -19,8 +19,8 @@
 
 */
 
-#ifndef _ColorSpaceDecoder
-#define _ColorSpaceDecoder
+#ifndef _ColorSpaceCodec
+#define _ColorSpaceCodec
 
 #include<string>
 #include<stdint.h>
@@ -32,14 +32,14 @@ class ColorSpaceCodec{
   static const char bsBases[5];
  public:
 	ColorSpaceCodec();
-	static int csChrToInt(char tChr);
-	static int bsChrToInt(char tChr);
+	static uint8_t csChrToInt(char tChr);
+	static uint8_t bsChrToInt(char tChr);
 	static char csChrToDE(char tChr);
 	static char bsChrToBS(char tChr);
 	static char bsIntToBS(uint8_t tInt);
 	static char csIntToCS(uint8_t tInt, bool doubleEncoding);
 	static bool isColorSpace(string sequence);
-	static void transformCStoDE(string csInput);
+	static string transformCStoDE(string csInput);
 	static string decodeCStoBS(string csInput);
 	static string decodeCStoBS(string csInput, bool reverseComplement);
 	static string encodeBStoCS(string bsInput);
