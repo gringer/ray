@@ -30,12 +30,15 @@ class ColorSpaceCodec{
   static const char bsBases[5];
  public:
 	ColorSpaceCodec();
-	int csChrToInt(char tChr);
-	int bsChrToInt(char tChr);
-	string decodeCStoBS(string csInput);
-	string decodeCStoBS(string csInput, bool reverseComplement);
-	string encodeBStoCS(string bsInput);
-  bool check();
+	static int csChrToInt(char tChr);
+	static int bsChrToInt(char tChr);
+	static char csChrToDE(char tChr);
+	static char bsChrToBS(char tChr);
+	static bool isColorSpace(string sequence);
+	static string decodeCStoBS(string csInput);
+	static string decodeCStoBS(string csInput, bool reverseComplement);
+	static string encodeBStoCS(string bsInput);
+	static bool check();
 };
 
 #endif

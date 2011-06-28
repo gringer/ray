@@ -39,6 +39,23 @@ ColorSpaceCodec::ColorSpaceCodec(){
 }
 
 /*
+ * Convert a character to double-encoded colour-space. Any character
+ * not in colour-space ([0123], or [ACGT] for double-encoded sequence) is
+ * converted to 'N'.
+ */
+char ColorSpaceCodec::csChrToDE(char tChr){
+	return bsBases[csChrToInt(tChr)];
+}
+
+/*
+ * Convert a character to base-space. Any character not in base-space ([ACGT])
+ * is converted to 'N'.
+ */
+char ColorSpaceCodec::bsChrToBS(char tChr){
+	return bsBases[bsChrToInt(tChr)];
+}
+
+/*
  * Convert colour-space character to a number. Anything other than [ACGT]
  * (i.e. double encoded) or [0123] is not considered a valid colour-space
  * character, so is converted to 4.
@@ -87,7 +104,22 @@ int ColorSpaceCodec::bsChrToInt(char tChr){
 	return(4);
 }
 
-
+/*
+ * Determines whether or not a sequence is encoded in colour-space. This is
+ * done by comparing the colour-space interpreted code with the base-space
+ * interpreted code at each location. If these differ, then a colour-space
+ * encoded sequence is assumed. Note that this cannot detect double-encoded
+ * colour-space sequences.
+ */
+bool ColorSpaceCodec::isColorSpace(string sequence){
+	for(unsigned int pos = 0; pos < sequence.length(); pos++){
+		char sequenceChar = sequence.at(pos);
+		if(bsChrToInt(sequenceChar) != csChrToInt(sequenceChar)){
+			return true;
+		}
+	}
+	return false;
+}
 
 /*
  * decode color-space read into base-space, assuming it has a starting base.

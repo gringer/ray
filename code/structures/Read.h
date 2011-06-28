@@ -45,14 +45,21 @@ class Read{
 	uint16_t m_length;
 	uint8_t m_type;
 	
+	// for colour-space representation
+	bool m_colorSpace;
+	char m_firstBase;
+
 	// for the scaffolder:
 	uint8_t m_forwardOffset;
 	uint8_t m_reverseOffset;
 
-	char*trim(char*a,const char*b);
+	void clean(string sequence);
+	void trim(string sequence);
 public:
 	Read(); // needed for repeated reads (assembler/seedExtender.cpp:1034)
 	Read(uint8_t*seq,int length); // raw sequence
+	Read(uint8_t*seq,int length,bool color); // raw sequence (colour space specified)
+	Read(uint8_t*seq,int length,char firstBase); // raw sequence with specified first base
 	Read(const char*sequence,MyAllocator*seqMyAllocator,bool trim);
 	void getSeq(char*buffer,bool color,bool doubleEncoding)const;
 	int length()const;

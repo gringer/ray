@@ -24,45 +24,42 @@
 #include<cstdlib>
 #include<iostream>
 #include<cstring>
+#include<format/ColorSpaceCodec.h>
 using namespace  std;
 
-char*Read::trim(char*buffer,const char*sequence){
-	//cout<<"In=."<<sequence<<"."<<endl;
-	int theLen=strlen(sequence);
-	strcpy(buffer,sequence);
-	for(int i=0;i<theLen;i++){
-		if(buffer[i]=='a')
-			buffer[i]='A';
-		else if(buffer[i]=='t')
-			buffer[i]='T';
-		else if(buffer[i]=='c')
-			buffer[i]='C';
-		else if(buffer[i]=='g')
-			buffer[i]='G';
-	}
-	// discard N at the beginning and end of the read.
-	// find the first symbol that is a A,T,C or G
-	int first=0;
-	while(buffer[first]!='A' && buffer[first]!='T' &&buffer[first]!='C' &&buffer[first]!='G' &&first<theLen){
-		first++;
-	}
-	char*corrected=buffer+first;
-	//cout<<"Trimmed first "<<first<<endl;
-	// find the last symbol that is a A,T,C, or G
-	int last=0;
-	int len=strlen(corrected);
-	for(int i=0;i<len;i++){
-		if(corrected[i]=='A' || corrected[i]=='T' || corrected[i]=='C' || corrected[i]=='G'){
-			last=i;
+/*
+ * Convert a sequence to [ACGTN]+. Colour-space characters are double-encoded as tr/0123/ACGT/.
+ * All other characters are converted to 'N'.
+ */
+void Read::clean(string sequence){
+	for(string::iterator it = sequence.begin(); it < sequence.end(); it++){
+		// convert to [ACGTN]
+		if(m_colorSpace){
+			*it = ColorSpaceCodec::csChrToDE(*it);
+		} else {
+			*it = ColorSpaceCodec::bsChrToBS(*it);
 		}
 	}
-	last++;
-	// only junk awaits beyond <last>
-	//cout<<"Trimmed last "<<last<<endl;
-	corrected[last]='\0';
-	//cout<<"Out= ."<<corrected<<"."<<endl;
-	//cout<<endl;
-	return corrected;
+}
+
+/*
+ * Trim off 'N' from the start and end of the sequence.
+ */
+void Read::trim(string sequence){
+	//cout<<"In=."<<sequence<<"."<<endl;
+	// discard N at the beginning and end of the read.
+	// erase up to the first symbol that is a A,T,C or G
+	for(string::iterator it = sequence.begin();(it < sequence.end()) && (*it == 'N'); it++){
+		sequence.erase(it);
+	}
+	//cout<<"Trimmed first "<<sequence<<endl;
+	// erase from the string end back to the last symbol that is a A,T,C, or G
+	int endPos = sequence.length();
+	while((endPos > 0) && (sequence.at(endPos-1) == 'N')){
+		endPos--;
+	}
+	sequence.erase(endPos, sequence.length() - endPos);
+	//cout<<"Trimmed last "<<sequence<<endl;
 }
 
 Read::Read(){ // needed for repeated reads (assembler/seedExtender.cpp:1034)
@@ -75,31 +72,62 @@ Read::Read(uint8_t*seq,int length){ // for raw sequences
 	m_type=TYPE_SINGLE_END;
 	m_sequence=seq;
 	m_length=length;
+	m_colorSpace = false;
+	m_firstBase = 'N';
 }
 
-Read::Read(const char*sequence,MyAllocator*seqMyAllocator,bool trimFlag){
+Read::Read(uint8_t*seq,int length,bool color){ // for raw sequences (colour space specified)
+	m_type=TYPE_SINGLE_END;
+	m_sequence=seq;
+	m_length=length;
+	m_colorSpace = color;
+	m_firstBase = 'N';
+}
+
+Read::Read(uint8_t*seq,int length,char firstBase){ // for raw sequences with first base
+	m_type=TYPE_SINGLE_END;
+	m_sequence=seq;
+	m_length=length;
+	m_colorSpace = true;
+	m_firstBase = firstBase;
+}
+
+Read::Read(const char*sequenceIn,MyAllocator*seqMyAllocator,bool trimFlag){
+	ColorSpaceCodec csc;
+	string tSeq(sequenceIn);
+	if(ColorSpaceCodec::isColorSpace(tSeq)){
+		m_colorSpace = true;
+		// assume first character of sequence is first base, ensure this is [ACGTN]
+		m_firstBase = ColorSpaceCodec::bsChrToBS(tSeq.at(0));
+		tSeq = tSeq.substr(1,tSeq.length()-1); // trim off first base
+	} else {
+		m_colorSpace = false;
+		m_firstBase = 'N';
+	}
 	m_forwardOffset=0;
 	m_reverseOffset=0;
 	m_type=TYPE_SINGLE_END;
-	if(trimFlag && strlen(sequence)<4096){
-		char buffer[4096];
-		sequence=trim(buffer,sequence);
+	// clean sequence (convert to [ACGTN]+)
+	clean(tSeq);
+	// trim sequence (remove initial / trailing 'N's)
+	if(trimFlag){
+		trim(tSeq);
 	}
-	int length=strlen(sequence);
+	int length=tSeq.length();
 	m_length=length;
 
 	int requiredBytes=getRequiredBytes();
 
-	uint8_t workingBuffer[4096];
+	uint8_t workingBuffer[requiredBytes];
 	for(int i=0;i<requiredBytes;i++){
 		workingBuffer[i]=0;
 	}
 
 	for(int position=0;position<length;position++){
-		char nucleotide=sequence[position];
-		if(nucleotide!='A'&&nucleotide!='T'&&nucleotide!='C'&&nucleotide!='G'){
-			nucleotide='A';
-		}
+		char nucleotide=tSeq.at(position);
+		if(nucleotide=='N'){
+			nucleotide='A'; // TODO note that this introduces error bias. It would be better to
+		}	                // split reads into contiguous sequences of unambiguous bases
 		uint8_t code=charToCode(nucleotide);
 		#ifdef __READ_VERBOSITY
 		if(position%4==0){
@@ -133,6 +161,9 @@ Read::Read(const char*sequence,MyAllocator*seqMyAllocator,bool trimFlag){
 }
 
 void Read::getSeq(char*workingBuffer,bool color,bool doubleEncoding) const{
+	if(color && !m_colorSpace){
+		cerr << "Warning: colour space requested but read is not in colour space\n";
+	}
 	for(int position=0;position<m_length;position++){
 		int positionInWorkingBuffer=position/4;
 		uint8_t word=m_sequence[positionInWorkingBuffer];
@@ -192,12 +223,6 @@ int Read::getRequiredBytes(){
 	int requiredBytes=requiredBits/8;
 	return requiredBytes;
 }
-
-void Read::setRawSequence(uint8_t*seq,int length){
-	m_sequence=seq;
-	m_length=length;
-}
-
 void Read::setLeftType(){
 	m_type=TYPE_LEFT_END;
 }
