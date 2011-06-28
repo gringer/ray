@@ -51,8 +51,7 @@ void SequencesLoader::registerSequence(){
 	
 	//cout<<"DEBUG2 Read="<<m_distribution_sequence_id<<" color="<<m_parameters->getColorSpaceMode()<<" Seq= "<<read<<endl;
 
-	Read myRead;
-	myRead.constructor(read,&(*m_persistentAllocator),true);
+	Read myRead(read,&(*m_persistentAllocator),true);
 	m_myReads->push_back(&myRead);
 
 	if(m_LOADER_isLeftFile){

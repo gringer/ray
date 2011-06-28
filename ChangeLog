@@ -22,6 +22,7 @@ distribution. Thanks to pmiguel on SEQanswers for providing raw data points.
  - distinguish between 'base-space->colour-space' and 'cs->bs'
  - rename ColorSpaceDecoder -> ColorSpaceCodec
  - rename encode -> encodeBStoCS to remove method name confusion
+* Read constructor method is now a true constructor
 * Colour space loader automatically works out CSFASTQ/CSFASTA format
 * Added colour space decoder unit test
  - update to show output (no output == success is clean, but not as rewarding)

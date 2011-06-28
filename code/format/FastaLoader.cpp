@@ -38,8 +38,7 @@ int FastaLoader::load(string file,ArrayOfReads*reads,MyAllocator*seqMyAllocator)
 			if(id!=""){
 				string sequenceStr=sequence.str();
 
-				Read t;
-				t.constructor(sequenceStr.c_str(),seqMyAllocator,true);
+				Read t(sequenceStr.c_str(),seqMyAllocator,true);
 				reads->push_back(&t);
 			}
 			id=buffer;
@@ -53,8 +52,7 @@ int FastaLoader::load(string file,ArrayOfReads*reads,MyAllocator*seqMyAllocator)
 	for(int i=0;i<(int)sequenceStr.length();i++){
 		quality<< "F";
 	}
-	Read t;
-	t.constructor(sequenceStr.c_str(),seqMyAllocator,true);
+	Read t(sequenceStr.c_str(),seqMyAllocator,true);
 	reads->push_back(&t);
 
 	f.close();

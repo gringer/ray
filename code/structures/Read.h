@@ -51,8 +51,9 @@ class Read{
 
 	char*trim(char*a,const char*b);
 public:
-	void constructor(const char*sequence,MyAllocator*seqMyAllocator,bool trim);
-	void constructorWithRawSequence(const char*sequence,uint8_t*raw,bool trim);
+	Read(); // needed for repeated reads (assembler/seedExtender.cpp:1034)
+	Read(uint8_t*seq,int length); // raw sequence
+	Read(const char*sequence,MyAllocator*seqMyAllocator,bool trim);
 	void getSeq(char*buffer,bool color,bool doubleEncoding)const;
 	int length()const;
 	Kmer getVertex(int pos,int w,char strand,bool color)const;

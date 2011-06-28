@@ -65,13 +65,19 @@ char*Read::trim(char*buffer,const char*sequence){
 	return corrected;
 }
 
-void Read::constructorWithRawSequence(const char*seq,uint8_t*raw,bool flag){
+Read::Read(){ // needed for repeated reads (assembler/seedExtender.cpp:1034)
 	m_type=TYPE_SINGLE_END;
-	m_length=strlen(seq);
-	m_sequence=raw;
+	m_length=0;
 }
 
-void Read::constructor(const char*sequence,MyAllocator*seqMyAllocator,bool trimFlag){
+
+Read::Read(uint8_t*seq,int length){ // for raw sequences
+	m_type=TYPE_SINGLE_END;
+	m_sequence=seq;
+	m_length=length;
+}
+
+Read::Read(const char*sequence,MyAllocator*seqMyAllocator,bool trimFlag){
 	m_forwardOffset=0;
 	m_reverseOffset=0;
 	m_type=TYPE_SINGLE_END;
