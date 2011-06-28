@@ -25,39 +25,41 @@
 #include <memory/MyAllocator.h>
 #include <structures/Kmer.h>
 #include <core/Parameters.h>
+#include <structures/MyHashTable.h>
 #include <stdint.h>
 
+/** a KmerCandidate may become a genomic super-star --
+ * one of the fews that make it to the graph
+ */
 class KmerCandidate{
 public:
 	Kmer m_lowerKey;
-	uint8_t m_count;
-};
+	COVERAGE_TYPE m_count;
+}ATTRIBUTE_PACKED;
 
+/**
+ * The KmerAcademy is the place where KmerCandidate  
+ * train to become  Vertex.
+ * If they fail to endure their hard training,
+ * they remain here. Usually, those failing are observed
+ * only once.
+ * The KmerAcademy is burned and destroyed once the graph is ready.
+ */
 class KmerAcademy{
 	Parameters*m_parameters;
 	uint64_t m_size;
 	bool m_inserted;
-	MyAllocator m_allocator;
-	KmerCandidate**m_gridData;
-	uint16_t*m_gridSizes;
-	int m_gridSize;
-	bool m_frozen;
+	MyHashTable<Kmer,KmerCandidate> m_hashTable;
 
-	/**
- *   move the item in front of the others
- */
-	KmerCandidate*move(int bin,int item);
 public:
 	void constructor(int rank,Parameters*a);
 	uint64_t size();
 	KmerCandidate*find(Kmer*key);
 	KmerCandidate*insert(Kmer*key);
 	bool inserted();
-	KmerCandidate*getElementInBin(int bin,int element);
-	int getNumberOfElementsInBin(int bin);
-	int getNumberOfBins();
-	void freeze();
 	void destructor();
+	MyHashTable<Kmer,KmerCandidate>*getHashTable();
+	void printStatistics();
 };
 
 #endif

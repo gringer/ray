@@ -84,6 +84,12 @@ DEBUG = n
 
 ifeq ($(GPROF),y)
 	OPTIMIZE = n
+	FORCE_PACKING = n
+endif
+
+ifeq ($(DEBUG),y)
+	OPTIMIZE = n
+	FORCE_PACKING = n
 endif
 
 PEDANTIC = n
@@ -140,7 +146,7 @@ LDFLAGS-$(DEBUG)  += -g
 CXXFLAGS-$(HAVE_CLOCK_GETTIME) += -DHAVE_CLOCK_GETTIME 
 LDFLAGS-$(HAVE_CLOCK_GETTIME) += -lrt
 
-LDFLAGS-$(GPROF) += -pg
+LDFLAGS-$(GPROF) += -pg -g
 
 CXXFLAGS += $(CXXFLAGS-y)
 LDFLAGS += $(LDFLAGS-y)
@@ -193,7 +199,7 @@ obj-y += code/scaffolder/Scaffolder.o
 obj-y += code/assembler/VertexMessenger.o \
 code/assembler/ReadFetcher.o code/assembler/LibraryWorker.o code/assembler/IndexerWorker.o  \
 code/assembler/SeedWorker.o code/assembler/ExtensionElement.o \
-code/assembler/DepthFirstSearchData.o code/assembler/MemoryConsumptionReducer.o  code/assembler/SeedingData.o \
+code/assembler/DepthFirstSearchData.o code/assembler/SeedingData.o \
 code/assembler/BubbleTool.o code/assembler/Chooser.o \
 code/assembler/FusionData.o code/assembler/Library.o code/assembler/Loader.o \
 code/assembler/OpenAssemblerChooser.o code/assembler/SeedExtender.o code/assembler/SequencesIndexer.o \
@@ -201,6 +207,7 @@ code/assembler/SequencesLoader.o \
 code/assembler/TimePrinter.o code/assembler/TipWatchdog.o code/assembler/VerticesExtractor.o \
 code/assembler/ray_main.o code/assembler/ExtensionData.o 
 obj-y += code/assembler/KmerAcademyBuilder.o
+obj-y += code/assembler/EdgePurger.o code/assembler/EdgePurgerWorker.o
 
 # inference rule
 %.o: %.cpp
@@ -226,6 +233,7 @@ showOptions:
 	@echo MPICXX = $(MPICXX)
 	@echo GPROF = $(GPROF)
 	@echo OPTIMIZE = $(OPTIMIZE)
+	@echo DEBUG = $(DEBUG)
 	@echo ""
 	@echo "Compilation and linking flags (generated automatically)"
 	@echo ""

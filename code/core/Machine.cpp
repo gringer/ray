@@ -86,6 +86,7 @@ Machine::Machine(int argc,char**argv){
 void Machine::start(){
 	m_initialisedAcademy=false;
 	m_coverageInitialised=false;
+	m_writeKmerInitialised=false;
 	m_timePrinter.constructor();
 
 	m_killed=false;
@@ -166,6 +167,10 @@ void Machine::start(){
 
 	m_scaffolder.constructor(&m_outbox,&m_inbox,&m_outboxAllocator,&m_parameters,&m_slave_mode,
 	&m_virtualCommunicator);
+
+	m_edgePurger.constructor(&m_outbox,&m_inbox,&m_outboxAllocator,&m_parameters,&m_slave_mode,&m_master_mode,
+	&m_virtualCommunicator,&m_subgraph);
+
 	m_coverageGatherer.constructor(&m_parameters,&m_inbox,&m_outbox,&m_slave_mode,&m_subgraph,
 		&m_outboxAllocator);
 
@@ -189,7 +194,6 @@ void Machine::start(){
 	m_startEdgeDistribution=false;
 
 	m_ranksDoneAttachingReads=0;
-	m_reducer.constructor(getSize(),&m_parameters);
 
 	m_messagesHandler.barrier();
 
@@ -368,7 +372,7 @@ void Machine::start(){
 		m_ed,getSize(),&m_timePrinter,&m_slave_mode,&m_master_mode,
 	&m_parameters,&m_fileId,m_seedingData,&m_inbox,&m_virtualCommunicator);
 
-	m_subgraph.constructor(getRank(),&m_diskAllocator,&m_parameters);
+	m_subgraph.constructor(getRank(),&m_parameters);
 	
 	m_seedingData->constructor(&m_seedExtender,getRank(),getSize(),&m_outbox,&m_outboxAllocator,&m_slave_mode,&m_parameters,&m_wordSize,&m_subgraph,&m_inbox,&m_virtualCommunicator);
 
@@ -387,7 +391,6 @@ void Machine::start(){
 	if(isMaster()){
 		cout<<endl;
 	}
-	m_mp.setReducer(&m_reducer);
 
 	m_mp.constructor(
 &m_messagesHandler,
@@ -751,11 +754,6 @@ void Machine::call_RAY_MASTER_MODE_SEND_COVERAGE_VALUES(){
 	cout<<"Rank "<<getRank()<<": the minimum coverage is "<<m_parameters.getMinimumCoverage()<<endl;
 	cout<<"Rank "<<getRank()<<": the peak coverage is "<<m_parameters.getPeakCoverage()<<endl;
 
-	if(m_parameters.writeKmers()){
-		cout<<endl;
-		cout<<"Rank "<<getRank()<<" wrote "<<m_parameters.getPrefix()<<".kmers.txt"<<endl;
-	}
-
 	uint64_t numberOfVertices=0;
 	uint64_t verticesWith1Coverage=0;
 	int lowestCoverage=9999;
@@ -873,13 +871,104 @@ void Machine::call_RAY_SLAVE_MODE_EXTRACT_VERTICES(){
 		);
 }
 
-void Machine::call_RAY_MASTER_MODE_TRIGGER_INDEXING(){
-	m_numberOfMachinesDoneSendingEdges=-9;
+void Machine::call_RAY_MASTER_MODE_PURGE_NULL_EDGES(){
 	m_master_mode=RAY_MASTER_MODE_DO_NOTHING;
 	m_timePrinter.printElapsedTime("Graph construction");
 	cout<<endl;
+	for(int i=0;i<getSize();i++){
+		Message aMessage(NULL,0,MPI_UNSIGNED_LONG_LONG,i,RAY_MPI_TAG_PURGE_NULL_EDGES,getRank());
+		m_outbox.push_back(aMessage);
+	}
+}
 
+void Machine::call_RAY_SLAVE_MODE_PURGE_NULL_EDGES(){
+	m_edgePurger.work();
+}
+
+void Machine::call_RAY_MASTER_MODE_WRITE_KMERS(){
+	if(!m_writeKmerInitialised){
+		m_writeKmerInitialised=true;
+		m_coverageRank=0;
+		m_numberOfRanksDone=0;
+	}else if(m_inbox.size()>0&&m_inbox.at(0)->getTag()==RAY_MPI_TAG_WRITE_KMERS_REPLY){
+		uint64_t*buffer=(uint64_t*)m_inbox.at(0)->getBuffer();
+		int bufferPosition=0;
+		for(int i=0;i<=4;i++){
+			for(int j=0;j<=4;j++){
+				m_edgeDistribution[i][j]+=buffer[bufferPosition++];
+			}
+		}
+		m_numberOfRanksDone++;
+	}else if(m_numberOfRanksDone==m_parameters.getSize()){
+		if(m_parameters.writeKmers()){
+			cout<<endl;
+			cout<<"Rank "<<getRank()<<" wrote "<<m_parameters.getPrefix()<<".kmers.txt"<<endl;
+		}
+
+		ostringstream edgeFile;
+		edgeFile<<m_parameters.getPrefix()<<".degreeDistribution.txt";
+		ofstream f(edgeFile.str().c_str());
+
+		f<<"# Most of the vertices should have an ingoing degree of 1 and an outgoing degree of 1."<<endl;
+		f<<"# These are the easy vertices."<<endl;
+		f<<"# Then, the most abundant are those with an ingoing degree of 1 and an outgoing degree of 2."<<endl;
+		f<<"# Note that vertices with a coverage of 1 are not considered."<<endl;
+		f<<"# The option -write-kmers will actually write all the graph to a file if you need more precise data."<<endl;
+		f<<"# IngoingDegree\tOutgoingDegree\tNumberOfVertices"<<endl;
+
+		for(int i=0;i<=4;i++){
+			for(int j=0;j<=4;j++){
+				f<<i<<"\t"<<j<<"\t"<<m_edgeDistribution[i][j]<<endl;
+			}
+		}
+		m_edgeDistribution.clear();
+		f.close();
+		cout<<"Rank "<<getRank()<<" wrote "<<edgeFile.str()<<endl;
+	
+		m_master_mode=RAY_MASTER_MODE_TRIGGER_INDEXING;
+	}else if(m_coverageRank==m_numberOfRanksDone){
+		Message aMessage(NULL,0,MPI_UNSIGNED_LONG_LONG,m_coverageRank,RAY_MPI_TAG_WRITE_KMERS,getRank());
+		m_outbox.push_back(aMessage);
+		m_coverageRank++;
+	}
+}
+
+void Machine::call_RAY_SLAVE_MODE_WRITE_KMERS(){
+	if(m_parameters.writeKmers())
+		m_coverageGatherer.writeKmers();
+	
+	/* send edge distribution */
+	GridTableIterator iterator;
+	iterator.constructor(&m_subgraph,m_parameters.getWordSize(),&m_parameters);
+
+	map<int,map<int,uint64_t> > distribution;
+	while(iterator.hasNext()){
+		Vertex*node=iterator.next();
+		Kmer key=*(iterator.getKey());
+		int parents=node->getIngoingEdges(&key,m_parameters.getWordSize()).size();
+		int children=node->getOutgoingEdges(&key,m_parameters.getWordSize()).size();
+		distribution[parents][children]++;
+	}
+
+	uint64_t*buffer=(uint64_t*)m_outboxAllocator.allocate(MAXIMUM_MESSAGE_SIZE_IN_BYTES);
+	int outputPosition=0;
+	for(int i=0;i<=4;i++){
+		for(int j=0;j<=4;j++){
+			buffer[outputPosition++]=distribution[i][j];
+		}
+	}
+
+	Message aMessage(buffer,outputPosition,MPI_UNSIGNED_LONG_LONG,MASTER_RANK,RAY_MPI_TAG_WRITE_KMERS_REPLY,getRank());
+	m_outbox.push_back(aMessage);
+	m_slave_mode=RAY_SLAVE_MODE_DO_NOTHING;
+}
+
+void Machine::call_RAY_MASTER_MODE_TRIGGER_INDEXING(){
+	m_master_mode=RAY_MASTER_MODE_DO_NOTHING;
+	
+	m_timePrinter.printElapsedTime("Edge purge");
 	cout<<endl;
+
 	for(int i=0;i<getSize();i++){
 		Message aMessage(NULL,0,MPI_UNSIGNED_LONG_LONG,i,RAY_MPI_TAG_START_INDEXING_SEQUENCES,getRank());
 		m_outbox.push_back(aMessage);
@@ -953,11 +1042,6 @@ void Machine::call_RAY_MASTER_MODE_TRIGGER_SEEDING(){
 }
 
 void Machine::call_RAY_SLAVE_MODE_START_SEEDING(){
-
-	#ifdef ASSERT
-	assert(m_subgraph.frozen());
-	#endif
-
 	m_seedingData->computeSeeds();
 }
 
@@ -1250,20 +1334,6 @@ void Machine::call_RAY_SLAVE_MODE_EXTENSION(){
 m_parameters.getMinimumCoverage(),&m_oa,&(m_seedingData->m_SEEDING_edgesReceived),&m_slave_mode);
 }
 
-void Machine::call_RAY_SLAVE_MODE_DELETE_VERTICES(){
-	if(m_verticesExtractor.deleteVertices(m_reducer.getVerticesToRemove(),&m_subgraph,
-&m_parameters,&m_outboxAllocator,&m_outbox,
-m_reducer.getIngoingEdges(),m_reducer.getOutgoingEdges()
-)){
-		// flush
-
-		Message aMessage(NULL,0,MPI_UNSIGNED_LONG_LONG,MASTER_RANK,RAY_MPI_TAG_DELETE_VERTICES_DONE,getRank());
-		m_outbox.push_back(aMessage);
-		m_slave_mode=RAY_SLAVE_MODE_DO_NOTHING;
-		m_reducer.destructor();
-	}
-}
-
 void Machine::processData(){
 	MachineMethod masterMethod=m_master_methods[m_master_mode];
 	(this->*masterMethod)();
@@ -1308,46 +1378,6 @@ bool Machine::isAlive(){
 Machine::~Machine(){
 	delete m_bubbleData;
 	m_bubbleData=NULL;
-}
-
-void Machine::call_RAY_MASTER_MODE_ASK_BEGIN_REDUCTION(){
-	for(int i=0;i<getSize();i++){
-		Message aMessage(NULL,0,MPI_UNSIGNED_LONG_LONG,i,RAY_MPI_TAG_ASK_BEGIN_REDUCTION,getRank());
-		m_outbox.push_back(aMessage);
-	}
-	m_master_mode=RAY_MASTER_MODE_DO_NOTHING;
-}
-
-void Machine::call_RAY_MASTER_MODE_START_REDUCTION(){
-	printf("\nRank %i asks all ranks to reduce memory consumption\n",getRank());
-	fflush(stdout);
-	for(int i=0;i<getSize();i++){
-		Message aMessage(NULL,0,MPI_UNSIGNED_LONG_LONG,i,RAY_MPI_TAG_START_REDUCTION,getRank());
-		m_outbox.push_back(aMessage);
-	}
-	m_master_mode=RAY_MASTER_MODE_DO_NOTHING;
-}
-
-void Machine::call_RAY_SLAVE_MODE_REDUCE_MEMORY_CONSUMPTION(){
-	if(m_reducer.reduce(&m_subgraph,&m_parameters,
-&(m_seedingData->m_SEEDING_edgesRequested),&(m_seedingData->m_SEEDING_vertexCoverageRequested),&(m_seedingData->m_SEEDING_vertexCoverageReceived),
-	&m_outboxAllocator,getSize(),getRank(),&m_outbox,
-&(m_seedingData->m_SEEDING_receivedVertexCoverage),m_seedingData,
-m_parameters.getMinimumCoverage(),&(m_seedingData->m_SEEDING_edgesReceived)
-)){
-		m_slave_mode=RAY_SLAVE_MODE_DO_NOTHING;
-		Message aMessage(NULL,0,MPI_UNSIGNED_LONG_LONG,MASTER_RANK,RAY_MPI_TAG_REDUCE_MEMORY_CONSUMPTION_DONE,getRank());
-		m_outbox.push_back(aMessage);
-		m_verticesExtractor.prepareDeletions();
-	}
-}
-
-void Machine::call_RAY_MASTER_MODE_RESUME_VERTEX_DISTRIBUTION(){
-	for(int i=0;i<getSize();i++){
-		Message aMessage(NULL,0,MPI_UNSIGNED_LONG_LONG,i,RAY_MPI_TAG_RESUME_VERTEX_DISTRIBUTION,getRank());
-		m_outbox.push_back(aMessage);
-	}
-	m_master_mode=RAY_MASTER_MODE_DO_NOTHING;
 }
 
 void Machine::assignMasterHandlers(){

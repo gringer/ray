@@ -43,7 +43,7 @@ void Library::updateDistances(){
 	}
 
 	for(int i=0;i<m_size;i++){
-		Message aMessage(intMessage,MAXIMUM_MESSAGE_SIZE_IN_BYTES/sizeof(uint64_t),MPI_UNSIGNED_LONG_LONG,i,RAY_MPI_TAG_UPDATE_LIBRARY_INFORMATION,m_rank);
+		Message aMessage((uint64_t*)intMessage,MAXIMUM_MESSAGE_SIZE_IN_BYTES/sizeof(uint64_t),MPI_UNSIGNED_LONG_LONG,i,RAY_MPI_TAG_UPDATE_LIBRARY_INFORMATION,m_rank);
 		m_outbox->push_back(aMessage);
 	}
 
@@ -182,6 +182,7 @@ Parameters*m_parameters,int*m_fileId,SeedingData*m_seedingData,StaticVector*inbo
 	prefixFull<<m_parameters->getMemoryPrefix()<<"_Library";
 	int chunkSize=4194304;
 	m_allocator.constructor(chunkSize,RAY_MALLOC_TYPE_LIBRARY_ALLOCATOR,m_parameters->showMemoryAllocations());
+	m_completedJobs=0;
 }
 
 void Library::setReadiness(){
@@ -202,7 +203,7 @@ Library::Library(){
 
 void Library::allocateBuffers(){
 	m_bufferedData.constructor(m_size,MAXIMUM_MESSAGE_SIZE_IN_BYTES/sizeof(uint64_t),
-		RAY_MALLOC_TYPE_LIBRARY_BUFFERS,m_parameters->showMemoryAllocations());
+		RAY_MALLOC_TYPE_LIBRARY_BUFFERS,m_parameters->showMemoryAllocations(),3);
 	(m_libraryIndexInitiated)=false;
 	(m_libraryIterator)=0;
 	for(map<int,map<int,int> >::iterator i=m_libraryDistances.begin();
@@ -225,6 +226,7 @@ void Library::sendLibraryDistances(){
 		Message aMessage(NULL,0,MPI_UNSIGNED_LONG_LONG,MASTER_RANK,RAY_MPI_TAG_ASK_LIBRARY_DISTANCES_FINISHED,getRank());
 		m_outbox->push_back(aMessage);
 		(*m_mode)=RAY_SLAVE_MODE_DO_NOTHING;
+		m_bufferedData.showStatistics(m_parameters->getRank());
 	}else if(!m_libraryIndexInitiated){
 		m_libraryIndexInitiated=true;
 		m_libraryIndex=m_libraryDistances[m_libraryIndexes[m_libraryIterator]].begin();

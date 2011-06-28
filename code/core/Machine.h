@@ -29,7 +29,6 @@
 #include <structures/MyForest.h>
 #include <structures/ArrayOfReads.h>
 #include <memory/OnDiskAllocator.h>
-#include <assembler/MemoryConsumptionReducer.h>
 #include <structures/StaticVector.h>
 #include <assembler/SeedingData.h>
 #include <map>
@@ -58,6 +57,7 @@
 #include <set>
 #include <time.h>
 #include <assembler/KmerAcademyBuilder.h>
+#include <assembler/EdgePurger.h>
 
 using namespace std;
 
@@ -68,6 +68,9 @@ class Machine;
 typedef void (Machine::*MachineMethod) ();
 
 class Machine{
+	EdgePurger m_edgePurger;
+	map<int,map<int,uint64_t> > m_edgeDistribution;
+
 	KmerAcademyBuilder m_kmerAcademyBuilder;
 	bool m_initialisedAcademy;
 	CoverageGatherer m_coverageGatherer;
@@ -125,7 +128,6 @@ class Machine{
 	int m_slave_mode;
 	int m_master_mode;
 
-	MemoryConsumptionReducer m_reducer;
 
 	bool m_startEdgeDistribution;
 	bool m_mode_AttachSequences;
@@ -135,7 +137,8 @@ class Machine{
 	int m_ranksDoneAttachingReads;
 	int m_numberOfMachinesReadyToSendDistribution;
 	int m_numberOfRanksDoneSeeding;
-	int m_numberOfRanksGone;
+	int m_numberOfRanksDone;
+	bool m_writeKmerInitialised;
 	FusionData*m_fusionData;
 
 	int m_machineRank;
@@ -256,8 +259,12 @@ class Machine{
 	void assignMasterHandlers();
 	void assignSlaveHandlers();
 
+	/** generate the prototypes using macros */
+
 	#define MACRO_LIST_ITEM(x) void call_ ## x();
+	/** master mode callback  prototypes */
 	#include <core/master_mode_macros.h>
+	/** slave mode callback prototypes */
 	#include <core/slave_mode_macros.h>
 	#undef MACRO_LIST_ITEM
 	
