@@ -148,12 +148,14 @@ Kmer kmerAtPosition(const char*m_sequence,int pos,int w,char strand,bool color){
 		exit(0);
 	}
 	if(strand=='F'){
+		//TODO: what if the kmer size is 100, or greater?... sequence[w] will be out of bounds
 		char sequence[100];
 		memcpy(sequence,m_sequence+pos,w);
 		sequence[w]='\0';
 		Kmer v=wordId(sequence);
 		return v;
 	}else if(strand=='R'){
+		//TODO: what if the kmer size is 100, or greater?... sequence[w] will be out of bounds
 		char sequence[100];
 		memcpy(sequence,m_sequence+length-pos-w,w);
 		sequence[w]='\0';

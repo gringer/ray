@@ -33,7 +33,7 @@
 
 /* Declare constant array values */
 const char ColorSpaceCodec::bsBases[5] = {'A','C','G','T','N'};
-const char ColorSpaceCodec::csColours[5] = {'0','1','2','3','4'};
+const char ColorSpaceCodec::csColors[5] = {'0','1','2','3','4'};
 
 ColorSpaceCodec::ColorSpaceCodec(){
 }
@@ -53,6 +53,26 @@ char ColorSpaceCodec::csChrToDE(char tChr){
  */
 char ColorSpaceCodec::bsChrToBS(char tChr){
 	return bsBases[bsChrToInt(tChr)];
+}
+
+/*
+ * Convert an integer to a base-space character. Anything outside the range 0..3 is
+ * converted to 'N', otherwise tr/0123/ACGT/.
+ */
+char ColorSpaceCodec::bsIntToBS(uint8_t tInt){
+	return bsBases[tInt];
+}
+
+/*
+ * Convert an integer to a colour-space character. Anything outside the range 0..3
+ * is converted to 'N', otherwise tr/0123/0123/, or tr/0123/ACGT/ if double-encoding.
+ */
+char ColorSpaceCodec::csIntToCS(uint8_t tInt, bool doubleEncoding){
+	if(doubleEncoding){
+		return bsBases[tInt];
+	} else {
+		return csColors[tInt];
+	}
 }
 
 /*
@@ -81,6 +101,8 @@ int ColorSpaceCodec::csChrToInt(char tChr){
 	}
 	return(4);
 }
+
+
 
 /*
  * Convert base-space character to a number. Anything other than [ACGT] is not
@@ -120,6 +142,13 @@ bool ColorSpaceCodec::isColorSpace(string sequence){
 	}
 	return false;
 }
+
+void ColorSpaceCodec::transformCStoDE(string csInput){
+	for(string::iterator it = csInput.begin(); it < csInput.end(); it++){
+		*it = bsBases[csChrToInt(*it)];
+	}
+}
+
 
 /*
  * decode color-space read into base-space, assuming it has a starting base.
@@ -188,10 +217,10 @@ string ColorSpaceCodec::encodeBStoCS(string bsInput){
 		} else {
 			// convert dimer from colour space
 			if(mapX % 2 == 0){
-				output += csColours[(mapX + mapY) % 4];
+				output += csColors[(mapX + mapY) % 4];
 			} else {
 				// add 4 to avoid modulus becoming negative
-				output += csColours[((mapX - mapY) + 4) % 4];
+				output += csColors[((mapX - mapY) + 4) % 4];
 			}
 		}
 	}

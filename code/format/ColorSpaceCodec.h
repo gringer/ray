@@ -23,10 +23,12 @@
 #define _ColorSpaceDecoder
 
 #include<string>
+#include<stdint.h>
+
 using namespace std;
 
 class ColorSpaceCodec{
-  static const char csColours[5];
+  static const char csColors[5];
   static const char bsBases[5];
  public:
 	ColorSpaceCodec();
@@ -34,7 +36,10 @@ class ColorSpaceCodec{
 	static int bsChrToInt(char tChr);
 	static char csChrToDE(char tChr);
 	static char bsChrToBS(char tChr);
+	static char bsIntToBS(uint8_t tInt);
+	static char csIntToCS(uint8_t tInt, bool doubleEncoding);
 	static bool isColorSpace(string sequence);
+	static void transformCStoDE(string csInput);
 	static string decodeCStoBS(string csInput);
 	static string decodeCStoBS(string csInput, bool reverseComplement);
 	static string encodeBStoCS(string bsInput);

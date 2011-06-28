@@ -126,7 +126,7 @@ Read::Read(const char*sequenceIn,MyAllocator*seqMyAllocator,bool trimFlag){
 	for(int position=0;position<length;position++){
 		char nucleotide=tSeq.at(position);
 		if(nucleotide=='N'){
-			nucleotide='A'; // TODO note that this introduces error bias. It would be better to
+			nucleotide='A'; // TODO: note that this introduces error bias. It would be better to
 		}	                // split reads into contiguous sequences of unambiguous bases
 		uint8_t code=charToCode(nucleotide);
 		#ifdef __READ_VERBOSITY
@@ -161,21 +161,34 @@ Read::Read(const char*sequenceIn,MyAllocator*seqMyAllocator,bool trimFlag){
 }
 
 void Read::getSeq(char*workingBuffer,bool color,bool doubleEncoding) const{
-	if(color && !m_colorSpace){
-		cerr << "Warning: colour space requested but read is not in colour space\n";
+	if(color && doubleEncoding){
+		cerr << "Warning: useless double-encoding requested for base-space output\n";
 	}
+	string out("");
+	out.reserve(m_length);
 	for(int position=0;position<m_length;position++){
 		int positionInWorkingBuffer=position/4;
 		uint8_t word=m_sequence[positionInWorkingBuffer];
 		int codePositionInWord=position%4;
 		uint8_t code=(word<<(6-codePositionInWord*2));//eliminate bits before
 		code=(code>>6);
-		if(!doubleEncoding)
-			color=false;
-		char nucleotide=codeToChar(code,color);
-		workingBuffer[position]=nucleotide;
+		if(m_colorSpace){
+			out += ColorSpaceCodec::csIntToCS(code, doubleEncoding);
+		} else {
+			out += ColorSpaceCodec::bsIntToBS(code);
+		}
 	}
-	workingBuffer[m_length]='\0';
+	if(!color & m_colorSpace) {
+		// output in base-space is desired, but read is in colour-space
+		out.insert(0,1,m_firstBase);
+		out = ColorSpaceCodec::decodeCStoBS(out);
+	} else {
+		// TODO: append first base, once it it confirmed as 'safe' to do
+		//out.insert(0,1,m_firstBase);
+	}
+	// Assumes workingBuffer has size 4000; this is consistent with the state as at 2011-06-28
+	// 3999 allows \0 to be stored as final character
+	strncpy(workingBuffer,out.c_str(),3999); // strncpy(dest, src, n)
 }
 
 int Read::length()const{
