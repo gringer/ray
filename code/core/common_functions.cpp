@@ -413,13 +413,17 @@ void print8(uint8_t a){
 uint8_t charToCode(char a){
 	switch (a){
 		case 'A':
+		case '0':
 			return RAY_NUCLEOTIDE_A;
-		case 'T':
-			return RAY_NUCLEOTIDE_T;
 		case 'C':
+		case '1':
 			return RAY_NUCLEOTIDE_C;
 		case 'G':
+		case '2':
 			return RAY_NUCLEOTIDE_G;
+		case 'T':
+		case '3':
+			return RAY_NUCLEOTIDE_T;
 		default:
 			return RAY_NUCLEOTIDE_A;
 	}

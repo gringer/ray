@@ -23,6 +23,7 @@
 #define _Kmer
 
 #include <core/constants.h>
+#include <format/ColorSpaceCodec.h>
 #include <stdint.h>
 #include <vector>
 #ifdef ASSERT
@@ -34,7 +35,7 @@ using namespace std;
  * Determine the number of uint64_t necessary to host 
  * k-mers of maximum length MAXKMERLENGTH
  */
-#define KMER_REQUIRED_BITS (2*MAXKMERLENGTH)
+#define KMER_REQUIRED_BITS (2*MAXKMERLENGTH+2)
 #define KMER_REQUIRED_BYTES (KMER_REQUIRED_BITS/8)
 #define KMER_REQUIRED_BYTES_MODULO (KMER_REQUIRED_BITS%8)
 #if KMER_REQUIRED_BYTES_MODULO
@@ -59,7 +60,9 @@ using namespace std;
  *
  */
 class Kmer{
+	typedef ColorSpaceCodec CSC;
 	uint64_t m_u64[KMER_U64_ARRAY_SIZE];
+	//TODO could possibly also store as a bitset
 public:
 	Kmer();
 	~Kmer();
@@ -73,6 +76,25 @@ public:
 	bool operator<(const Kmer&b)const;
 	bool operator!=(const Kmer&b)const;
 	bool operator==(const Kmer&b)const;
+
+	INLINE
+	void clear(){
+		for(int i=0;i<getNumberOfU64();i++){
+			m_u64[i]=0;
+		}
+	}
+
+	INLINE
+	void setPiece(int piece, int code){
+		int arrayPos = piece / 32;
+		int bitLocation = (piece % 32) << 1;
+		#ifdef ASSERT
+		assert(code<4);
+		assert(arrayPos < KMER_U64_ARRAY_SIZE);
+		#endif
+		m_u64[arrayPos] &= ~(0b11 << bitLocation); // clear previous set bits
+		m_u64[arrayPos] |= (code << bitLocation); // set new bits
+	}
 
 	INLINE
 	void setU64(int i,uint64_t b){

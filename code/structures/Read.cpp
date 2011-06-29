@@ -25,6 +25,7 @@
 #include<iostream>
 #include<cstring>
 #include<format/ColorSpaceCodec.h>
+#include<core/UnitTestHarness.h>
 using namespace  std;
 
 /*
