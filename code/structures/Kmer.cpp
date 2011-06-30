@@ -36,7 +36,7 @@ Kmer::Kmer(string sequence){
 	int checkSum = 0;
 	bool colorSpace = CSC::isColorSpace(sequence);
 	bool firstBaseKnown = (!colorSpace || (sequence.at(0) != 'N'));
-	for(uint8_t i = 0; i < sequence.length(); i++){
+	for(int i = 0; i < (int)sequence.length(); i++){
 		int code = charToCode(sequence.at(i));
 		if(i > 0){ // only checksum the non-firstBase sequence
 			checkSum = (checkSum + code) % 4;

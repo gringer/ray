@@ -134,7 +134,7 @@ uint8_t ColorSpaceCodec::bsChrToInt(char tChr){
  * colour-space sequences.
  */
 bool ColorSpaceCodec::isColorSpace(string sequence){
-	for(unsigned int pos = 0; pos < sequence.length(); pos++){
+	for(int pos = 0; pos < (int)sequence.length(); pos++){
 		char sequenceChar = sequence.at(pos);
 		if(bsChrToInt(sequenceChar) != csChrToInt(sequenceChar)){
 			return true;
@@ -181,7 +181,7 @@ string ColorSpaceCodec::decodeCStoBS(string csInput, bool reverseComplement){
 	} else {
 		output += toupper(csInput.at(0));
 	}
-	for(unsigned int pos = 1; pos < csInput.length(); pos++){
+	for(int pos = 1; pos < (int)csInput.length(); pos++){
 		// get next bases, first (base) from output, second (colour) from input
 		int mapX = bsChrToInt(output.at(pos-1));
 		int mapY = csChrToInt(csInput.at(pos));
