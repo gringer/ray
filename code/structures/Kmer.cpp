@@ -37,11 +37,11 @@ Kmer::Kmer(string sequence){
 	bool colorSpace = CSC::isColorSpace(sequence);
 	bool firstBaseKnown = (!colorSpace || (sequence.at(0) != 'N'));
 	for(int i = 0; i < (int)sequence.length(); i++){
-		int code = charToCode(sequence.at(i));
+		int code = CSC::csChrToInt(sequence.at(i));
 		if(i > 0){ // only checksum the non-firstBase sequence
 			checkSum = (checkSum + code) % 4;
 		}
-		setPiece(i+1, code);
+		setPiece(i+1, code>3?0:code);
 	}
 	int flags = (colorSpace?1:0) + (firstBaseKnown?2:0);
 	setPiece(0,flags);
@@ -61,11 +61,11 @@ Kmer::Kmer(const Kmer& b, bool convertToColourSpace){
 	} else {
 		// not in colour-space, so convert base-space to colour space
 		int baseX = b.getPiece(1);
-		 // first base is always known in base space, so no checksum
-		setPiece(0,0b01);
+		setPiece(0,KMER_BS_FIRSTBASE_KNOWN);
 		setPiece(1,baseX);
 		for(int i=2;i<(MAXKMERLENGTH);i++){
-			setPiece(i,CSC::mapBStoCS(baseX,b.getPiece(i)));
+			int code = CSC::mapBStoCS(baseX,b.getPiece(i));
+			setPiece(i,code>3?0:code);
 		}
 	}
 }
@@ -80,17 +80,19 @@ Kmer::~Kmer(){
 bool Kmer::checkSum(){
 	// warn if first base is unknown and checksum is invalid
 	// [this should alert to incorrect encodings... eventually]
-	if((m_u64[0] & 0b11) == 0b10){
-		int checkSum = (m_u64[0] & 0b1100) >> 2;
+	if((m_u64[0] & KMER_FLAGS) == KMER_CS_FIRSTBASE_UNKNOWN){
+		int checkSum = (m_u64[0] & KMER_FIRSTBASE) >> 2;
 		for(int i=0;i<(MAXKMERLENGTH-1);i++){
 			//+2: skip over flags and checksum / firstBase
 			checkSum += getPiece(i+2);
 		}
-		if(checkSum != 0){
-			cerr << "Colour-space checksum (for unknown first-base) is invalid. Found " << checkSum <<
-					", expected 0" << endl;
-		}
+		#ifdef ASSERT
+		assert(checkSum == 0);
+		#endif
 		return(checkSum == 0);
+	} else if ((m_u64[0] & KMER_FLAGS) == KMER_BS_FIRSTBASE_UNKNOWN){
+		// in base-space and first base unknown... not possible
+		return false;
 	} else {
 		// no checkSum present, or not in colour-space, so assume the sequence is fine
 		return true;
@@ -154,10 +156,11 @@ int Kmer::compare(const Kmer& b) const{
 		uint64_t checkA = m_u64[i];
 		uint64_t checkB = b.m_u64[i];
 		if(i == 0){
-			if(((checkA & 0b10) == 0) || ((checkB & 0b10) == 0)){
+			if(((checkA & KMER_FIRSTBASE_KNOWN) == 0) ||
+					((checkB & KMER_FIRSTBASE_KNOWN) == 0)){
 				// at least one of the first bases is unknown, so ignore first base for comparison
-				checkA &= ~(0b1110); // clear unknown bit and first base
-				checkB &= ~(0b1110);
+				checkA &= KMER_CLEAR_FIRSTBASE; // clear unknown bit and first base
+				checkB &= KMER_CLEAR_FIRSTBASE;
 			}
 		}
 		if(checkA<checkB){

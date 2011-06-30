@@ -53,13 +53,33 @@ using namespace std;
 	#define KMER_U64_ARRAY_SIZE (KMER_UINT64_T)
 #endif
 
+#define KMER_CS_FIRSTBASE_UNKNOWN (0b01)
+#define KMER_CS_FIRSTBASE_KNOWN   (0b11)
+#define KMER_BS_FIRSTBASE_UNKNOWN (0b00)
+#define KMER_BS_FIRSTBASE_KNOWN   (0b10)
+#define KMER_FIRSTBASE_KNOWN      (0b10)
+#define KMER_FLAGS                (0b11)
+#define KMER_FIRSTBASE            (0b1100)
+#define KMER_CLEAR_FIRSTBASE      (~(0b1110))
+
 /**
  * Class for storing k-mers.
  * For now only an array of uint64_t is present, but later,
  * when the code is stable, this could be a mix of u64, u32 and u16 and u8
  * while maintening the same interface, that are the two functions.
  *
+ * Kmer format
+ * bit 0: colour-space status (1: in colour space, 0: in base space)
+ * bit 1: first-base unknown (1: unknown first base, 0: known first base)
+ *        Note: if in base-space, first base is *always* known
+ * bit 2-3: first base (A=0b00,C=0b01,G=0b10,T=0b11)
+ *        Note: if first-base is unknown, this is a checkSum modifier
+ *              in this case, the 2-bit sum from bits 2-3 onwards
+ *              should be 0
+ * bit 4 onwards: remaining sequence, 2 bits per base/colour
+ *
  */
+
 class Kmer{
 	typedef ColorSpaceCodec CSC;
 	uint64_t m_u64[KMER_U64_ARRAY_SIZE];
