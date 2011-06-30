@@ -26,6 +26,7 @@
 #include <format/ColorSpaceCodec.h>
 #include <stdint.h>
 #include <vector>
+#include <string>
 #ifdef ASSERT
 #include <assert.h>
 #endif
@@ -62,17 +63,22 @@ using namespace std;
 class Kmer{
 	typedef ColorSpaceCodec CSC;
 	uint64_t m_u64[KMER_U64_ARRAY_SIZE];
-	//TODO could possibly also store as a bitset
+	//TODO could possibly also store this as a bitset
 public:
 	Kmer();
+	Kmer(string sequence);
+	Kmer(const Kmer& b, bool convertToColourSpace);
 	~Kmer();
+	bool checkSum();
 	bool isEqual(Kmer*a);
 	bool isLower(Kmer*a);
+	int compare(const Kmer& a)const;
 	void print();
 	void pack(uint64_t*messageBuffer,int*messagePosition);
 	void unpack(uint64_t*messageBuffer,int*messagePosition);
 	void unpack(vector<uint64_t>*messageBuffer,int*messagePosition);
 	void operator=(const Kmer&b);
+	bool isColorSpace() const;
 	bool operator<(const Kmer&b)const;
 	bool operator!=(const Kmer&b)const;
 	bool operator==(const Kmer&b)const;
@@ -97,6 +103,16 @@ public:
 	}
 
 	INLINE
+	int getPiece(int piece) const{
+		int arrayPos = piece / 32;
+		int bitLocation = (piece % 32) << 1;
+		#ifdef ASSERT
+		assert(arrayPos < KMER_U64_ARRAY_SIZE);
+		#endif
+		return(m_u64[arrayPos] & (0b11 << bitLocation)); // retrieve bits from position
+	}
+
+	INLINE
 	void setU64(int i,uint64_t b){
 		#ifdef ASSERT
 		assert(i<KMER_U64_ARRAY_SIZE);
@@ -105,7 +121,7 @@ public:
 	}
 
 	INLINE
-	uint64_t getU64(int i){
+	uint64_t getU64(int i) const{
 		#ifdef ASSERT
 		assert(i<KMER_U64_ARRAY_SIZE);
 		#endif

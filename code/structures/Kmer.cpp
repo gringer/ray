@@ -20,18 +20,23 @@
 */
 
 #include <structures/Kmer.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <assert.h>
+#include <core/common_functions.h>
+#include <format/ColorSpaceCodec.h>
 
 Kmer::Kmer(string sequence){
 	#ifdef ASSERT
-	assert(sequence.length() == MAXKMERLENGTH);
+	// note: a sequence AGCT will be indistinguishable from AGCTAAAAAAAAAA in base-space
+	//       and AGCTTTTTTTTTTTT in colour-space
+	assert(sequence.length() <= MAXKMERLENGTH);
 	#endif
 	clear();
 	int checkSum = 0;
 	bool colorSpace = CSC::isColorSpace(sequence);
-	bool firstBaseKnown = (!colorSpace || (sequence.at(i) != 'N'));
-	for(int i = 0; i < sequence.length(); i++){
+	bool firstBaseKnown = (!colorSpace || (sequence.at(0) != 'N'));
+	for(uint8_t i = 0; i < sequence.length(); i++){
 		int code = charToCode(sequence.at(i));
 		if(i > 0){ // only checksum the non-firstBase sequence
 			checkSum = (checkSum + code) % 4;
@@ -40,8 +45,28 @@ Kmer::Kmer(string sequence){
 	}
 	int flags = (colorSpace?1:0) + (firstBaseKnown?2:0);
 	setPiece(0,flags);
-	if(!firstBaseknown){
+	if(!firstBaseKnown){
 		setPiece(1,(4 - checkSum) % 4); // so a 2-bit checksum == 0
+	}
+}
+
+Kmer::Kmer(const Kmer& b, bool convertToColourSpace){
+	clear();
+	if((b.m_u64[0] & 1) == 1){
+		// already in colour-space, so do a straight copy of the data
+		for(int i=0;i<getNumberOfU64();i++){
+			m_u64[i] = b.m_u64[i];
+		}
+		checkSum();
+	} else {
+		// not in colour-space, so convert base-space to colour space
+		int baseX = b.getPiece(1);
+		 // first base is always known in base space, so no checksum
+		setPiece(0,0b01);
+		setPiece(1,baseX);
+		for(int i=2;i<(MAXKMERLENGTH);i++){
+			setPiece(i,CSC::mapBStoCS(baseX,b.getPiece(i)));
+		}
 	}
 }
 
@@ -52,21 +77,33 @@ Kmer::Kmer(){
 Kmer::~Kmer(){
 }
 
+bool Kmer::checkSum(){
+	// warn if first base is unknown and checksum is invalid
+	// [this should alert to incorrect encodings... eventually]
+	if((m_u64[0] & 0b11) == 0b10){
+		int checkSum = (m_u64[0] & 0b1100) >> 2;
+		for(int i=0;i<(MAXKMERLENGTH-1);i++){
+			//+2: skip over flags and checksum / firstBase
+			checkSum += getPiece(i+2);
+		}
+		if(checkSum != 0){
+			cerr << "Colour-space checksum (for unknown first-base) is invalid. Found " << checkSum <<
+					", expected 0" << endl;
+		}
+		return(checkSum == 0);
+	} else {
+		// no checkSum present, or not in colour-space, so assume the sequence is fine
+		return true;
+	}
+}
+
 int Kmer::getNumberOfU64(){
 	return KMER_U64_ARRAY_SIZE;
 }
 
-bool Kmer::isLower(Kmer*a){
-	return (this < (*a));
-}
-
-bool Kmer::isEqual(Kmer*a){
-	return (this == (*a));
-}
-
 void Kmer::print(){
-	for(int i=0;i<getNumberOfU64();i++){
-		printf("(%b)",m_u64[i]);
+	for(int i=0;i<MAXKMERLENGTH;i++){
+		printf("(%d)",getPiece(i));
 	}
 	printf("\n");
 }
@@ -92,67 +129,63 @@ void Kmer::unpack(vector<uint64_t>*messageBuffer,int*messagePosition){
 	}
 }
 
-bool Kmer::operator<(const Kmer&b)const{
-	for(int i=0;i<KMER_U64_ARRAY_SIZE;i++){
-		checkA = m_u64[i];
-		checkB = b.m_u64[i];
-		if(i == 0){
-			if((checkA & 0b10 == 0) || (checkB & 0b10 == 0)){
-				// at least one of the first bases is unknown, so ignore first base for comparison
-				checkA &= ~(0b1110); // clear unknown bit and first base
-				checkB &= ~(0b1110);
-			}
-		}
-		if(checkA<checkB){
-			return true;
-		}else if(checkA>checkB){
-			return false;
-		}
-	}
-	return false;
-}
-
 void Kmer::operator=(const Kmer&b){
 	for(int i=0;i<KMER_U64_ARRAY_SIZE;i++){
 		m_u64[i]=b.m_u64[i];
 	}
 }
 
-bool Kmer::operator==(const Kmer&b) const{
-	//TODO: make this work for base-space vs colour-space
-	for(int i=0;i<KMER_U64_ARRAY_SIZE;i++){
-		checkA = m_u64[i];
-		checkB = b.m_u64[i];
-		if(i == 0){
-			if((checkA & 0b10 == 0) || (checkB & 0b10 == 0)){
-				// at least one of the first bases is unknown, so ignore first base for comparison
-				checkA &= ~(0b1110); // clear unknown bit and first base
-				checkB &= ~(0b1110);
-			}
-		}
-		if(m_u64[i]!=b.m_u64[i]){
-			return false;
-		}
-	}
-	return true;
+bool Kmer::isColorSpace() const{
+	return((m_u64[0] & 1) == 1);
 }
 
-bool Kmer::operator!=(const Kmer&b) const{
-	//TODO: make this work for base-space vs colour-space
+int Kmer::compare(const Kmer& b) const{
+	// normalise to make sure both Kmers are in the same space
+	if(this->isColorSpace() && !b.isColorSpace()){
+		Kmer csB(b, true);
+		return(this->compare(csB));
+	}
+	if(!this->isColorSpace() && b.isColorSpace()){
+		Kmer csA(*this, true);
+		return(csA.compare(b));
+	}
+	// compare sequence at all known locations
 	for(int i=0;i<KMER_U64_ARRAY_SIZE;i++){
-		checkA = m_u64[i];
-		checkB = b.m_u64[i];
+		uint64_t checkA = m_u64[i];
+		uint64_t checkB = b.m_u64[i];
 		if(i == 0){
-			if((checkA & 0b10 == 0) || (checkB & 0b10 == 0)){
+			if(((checkA & 0b10) == 0) || ((checkB & 0b10) == 0)){
 				// at least one of the first bases is unknown, so ignore first base for comparison
 				checkA &= ~(0b1110); // clear unknown bit and first base
 				checkB &= ~(0b1110);
 			}
 		}
-		if(m_u64[i]!=b.m_u64[i]){
-			return true;
+		if(checkA<checkB){
+			return -1;
+		}else if(checkA>checkB){
+			return 1;
 		}
 	}
-	return false;
+	return 0;
+}
+
+bool Kmer::operator==(const Kmer&b)const{
+	return (this->compare(b) == 0);
+}
+
+bool Kmer::operator!=(const Kmer&b)const{
+	return (this->compare(b) != 0);
+}
+
+bool Kmer::operator<(const Kmer&b)const{
+	return (this->compare(b) < 0);
+}
+
+bool Kmer::isLower(Kmer*a){
+	return (this->compare(*a) < 0);
+}
+
+bool Kmer::isEqual(Kmer*a){
+	return (this->compare(*a) == 0);
 }
 

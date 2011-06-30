@@ -150,6 +150,21 @@ string ColorSpaceCodec::transformCStoDE(string csInput){
 	return csInput;
 }
 
+/*
+ * convert a base-space pair into a colour-space code
+ */
+int ColorSpaceCodec::mapBStoCS(int mapX, int mapY){
+	if((mapX >= 4) || (mapY >= 4)){
+		return 4;
+	} else {
+		if(mapX % 2 == 0){
+			return ((mapX + mapY) % 4);
+		} else {
+			// add 4 to avoid modulus becoming negative
+			return(((mapX - mapY) + 4) % 4);
+		}
+	}
+}
 
 /*
  * decode color-space read into base-space, assuming it has a starting base.
@@ -213,17 +228,7 @@ string ColorSpaceCodec::encodeBStoCS(string bsInput){
 		// get next colours, both (bases) from input
 		int mapX = bsChrToInt(bsInput.at(pos));
 		int mapY = bsChrToInt(bsInput.at(pos+1));
-		if((mapX >= 4) || (mapY >= 4)){
-			output += 'N';
-		} else {
-			// convert dimer from colour space
-			if(mapX % 2 == 0){
-				output += csColors[(mapX + mapY) % 4];
-			} else {
-				// add 4 to avoid modulus becoming negative
-				output += csColors[((mapX - mapY) + 4) % 4];
-			}
-		}
+		output += csColors[mapBStoCS(mapX,mapY)];
 	}
 	return(output);
 }
