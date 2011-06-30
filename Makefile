@@ -16,7 +16,7 @@ PREFIX=install-prefix
 # 96 nucleotides are stored on 3x64 bits
 # Intermediate values should utilise intermediate numbers of bits.
 # There is no maximum value for MAXKMERLENGTH
-MAXKMERLENGTH = 32
+MAXKMERLENGTH = 31
 
 # support for .gz files
 # needs libz
@@ -256,10 +256,10 @@ readSimulator/VirtualNextGenSequencer: readSimulator/simulatePairedReads.cpp
 	@$(CXX) -o $@ $< $(CXXFLAGS)
 	@echo "  CXX $<"
 
-tests/UnitTests.txt: code/Ray tests/*.cpp tests/*.sh
-	cd tests; ./main.sh
+unit-tests/UnitTests.txt: code/Ray unit-tests/*.cpp unit-tests/*.sh
+	cd unit-tests; ./main.sh
 
-tests: tests/UnitTests.txt
+tests: unit-tests/UnitTests.txt
 
 clean:
 	@rm -f $(TARGETS) $(obj-y) showOptions PREFIX TARGETS
