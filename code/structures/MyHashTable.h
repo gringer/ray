@@ -236,9 +236,9 @@ VALUE*MyHashTableGroup<KEY,VALUE>::insert(int numberOfBucketsInGroup,int bucket,
 	assert(getBit(bucket)==1);
 	if(getBucket(bucket)->m_lowerKey!=*key){
 		cout<<"Expected"<<endl;
-		key->print();
+		key->printPieces();
 		cout<<"Actual"<<endl;
-		getBucket(bucket)->m_lowerKey.print();
+		getBucket(bucket)->m_lowerKey.printPieces();
 		
 		cout<<"Bucket= "<<bucket<<" BucketsBefore= "<<bucketsBefore<<" BucketsAfter= "<<bucketsAfter<<endl;
 	}

@@ -95,10 +95,11 @@ public:
 	bool isEqual(Kmer*a);
 	bool isLower(Kmer*a);
 	int compare(const Kmer& a)const;
-	void print();
+	void printPieces();
 	void pack(uint64_t*messageBuffer,int*messagePosition);
 	void unpack(uint64_t*messageBuffer,int*messagePosition);
 	void unpack(vector<uint64_t>*messageBuffer,int*messagePosition);
+	string toString(bool showFirstBase);
 	void operator=(const Kmer&b);
 	bool isColorSpace() const;
 	bool operator<(const Kmer&b)const;

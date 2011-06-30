@@ -110,7 +110,7 @@ void KmerAcademyBuilder::process(int*m_mode_send_vertices_sequence_id,
 		memcpy(memory,m_readSequence+p,wordSize);
 		memory[wordSize]='\0';
 		if(isValidDNA(memory)){
-			Kmer a=wordId(memory);
+			Kmer a(memory);
 
 			int rankToFlush=0;
 

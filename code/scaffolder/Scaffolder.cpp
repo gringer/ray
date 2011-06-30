@@ -1091,6 +1091,7 @@ void Scaffolder::getContigSequence(uint64_t id){
 			m_requestedContigChunk=false;
 		}
 	}else{
+		// TODO: the scaffolder needs to be aware  of first-base colour-space
 		m_contigSequence=convertToString(&m_contigPath,m_parameters->getWordSize(),m_parameters->getColorSpaceMode());
 		m_hasContigSequence=true;
 	}

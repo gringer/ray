@@ -109,11 +109,42 @@ int Kmer::getNumberOfU64(){
 	return KMER_U64_ARRAY_SIZE;
 }
 
-void Kmer::print(){
+void Kmer::printPieces(){
 	for(int i=0;i<MAXKMERLENGTH;i++){
 		printf("(%d)",getPiece(i));
 	}
 	printf("\n");
+}
+
+string Kmer::toString(bool showFirstBase){
+	#ifdef ASSERT
+	assert(checkSum());
+	#endif
+	string out("");
+	out.reserve(MAXKMERLENGTH);
+	int flags = getPiece(0);
+	bool colorSpace = ((flags & KMER_COLORSPACE) != 0);
+	bool firstBaseKnown = ((flags & KMER_FIRSTBASE_KNOWN) != 0);
+	for(int i = 0; i < MAXKMERLENGTH; i++){
+		int code = getPiece(i+1);
+		if(i == 0){
+			if(showFirstBase || !colorSpace){
+				// in base space, want to show everything
+				if(!firstBaseKnown){
+					out += "N";
+				} else {
+					out += CSC::bsIntToBS(code);
+				}
+			}
+		} else {
+			if(!colorSpace){
+				out += CSC::bsIntToBS(code);
+			} else {
+				out += CSC::csIntToCS(code, false);
+			}
+		}
+	}
+	return out;
 }
 
 void Kmer::pack(uint64_t*messageBuffer,int*messagePosition){
@@ -144,7 +175,7 @@ void Kmer::operator=(const Kmer&b){
 }
 
 bool Kmer::isColorSpace() const{
-	return((m_u64[0] & 1) == 1);
+	return((m_u64[0] & KMER_COLORSPACE) != 0);
 }
 
 int Kmer::compare(const Kmer& b) const{

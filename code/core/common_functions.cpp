@@ -121,7 +121,7 @@ string convertToString(vector<Kmer>*b,int m_wordSize,bool color){
 		a<<codeToChar(getFirstSegmentFirstCode((*b)[p],m_wordSize));
 	}
 	#else
-	a<<idToWord(&(*b)[0],m_wordSize,color);
+	a<<((*b)[0]).toString(false); //TODO: for now, because there would be scaffolder problems otherwise
 	#endif
 	for(int j=1;j<(int)(*b).size();j++){
 		a<<getLastSymbol(&(*b)[j],m_wordSize,color);
@@ -152,14 +152,14 @@ Kmer kmerAtPosition(const char*m_sequence,int pos,int w,char strand,bool color){
 		char sequence[100];
 		memcpy(sequence,m_sequence+pos,w);
 		sequence[w]='\0';
-		Kmer v=wordId(sequence);
+		Kmer v(sequence);
 		return v;
 	}else if(strand=='R'){
 		//TODO: what if the kmer size is 100, or greater?... sequence[w] will be out of bounds
 		char sequence[100];
 		memcpy(sequence,m_sequence+length-pos-w,w);
 		sequence[w]='\0';
-		Kmer v=wordId(sequence);
+		Kmer v(sequence);
 		return complementVertex(&v,w,color);
 	}
 	Kmer error;
@@ -455,21 +455,6 @@ char codeToChar(uint8_t a,bool color){
 			return 'G';
 	}
 	return 'A';
-}
-
-string idToWord(Kmer*i,int wordSize,bool color){
-	char a[1000];
-	for(int p=0;p<wordSize;p++){
-		int bitPosition=2*p;
-		int chunkId=p/32;
-		int bitPositionInChunk=(bitPosition%64);
-		uint64_t chunk=i->getU64(chunkId);
-		uint64_t j=(chunk<<(62-bitPositionInChunk))>>62; // clear the bits.
-		a[p]=codeToChar(j,color);
-	}
-	a[wordSize]='\0';
-	string b=a;
-	return b;
 }
 
 int portableProcessId(){
