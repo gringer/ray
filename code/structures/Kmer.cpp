@@ -41,9 +41,11 @@ Kmer::Kmer(string sequence){
 		if(i > 0){ // only checksum the non-firstBase sequence
 			checkSum = (checkSum + code) % 4;
 		}
-		setPiece(i+1, code>3?0:code);
+		code = (code>3)?0:code;
+		setPiece(i+1, code);
 	}
-	int flags = (colorSpace?1:0) + (firstBaseKnown?2:0);
+	int flags = (colorSpace?KMER_COLORSPACE:0) +
+			(firstBaseKnown?KMER_FIRSTBASE_KNOWN:0);
 	setPiece(0,flags);
 	if(!firstBaseKnown){
 		setPiece(1,(4 - checkSum) % 4); // so a 2-bit checksum == 0
@@ -65,7 +67,8 @@ Kmer::Kmer(const Kmer& b, bool convertToColourSpace){
 		setPiece(1,baseX);
 		for(int i=2;i<(MAXKMERLENGTH);i++){
 			int code = CSC::mapBStoCS(baseX,b.getPiece(i));
-			setPiece(i,code>3?0:code);
+			code = (code>3)?0:code;
+			setPiece(i,code);
 		}
 	}
 }
@@ -91,6 +94,9 @@ bool Kmer::checkSum(){
 		#endif
 		return(checkSum == 0);
 	} else if ((m_u64[0] & KMER_FLAGS) == KMER_BS_FIRSTBASE_UNKNOWN){
+		#ifdef ASSERT
+		assert((m_u64[0] & KMER_FLAGS) != KMER_BS_FIRSTBASE_UNKNOWN);
+		#endif
 		// in base-space and first base unknown... not possible
 		return false;
 	} else {

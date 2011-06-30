@@ -57,8 +57,10 @@ using namespace std;
 #define KMER_CS_FIRSTBASE_KNOWN   (0b11)
 #define KMER_BS_FIRSTBASE_UNKNOWN (0b00)
 #define KMER_BS_FIRSTBASE_KNOWN   (0b10)
+#define KMER_COLORSPACE           (0b01)
 #define KMER_FIRSTBASE_KNOWN      (0b10)
 #define KMER_FLAGS                (0b11)
+#define KMER_2BITMASK             (0b11)
 #define KMER_FIRSTBASE            (0b1100)
 #define KMER_CLEAR_FIRSTBASE      (~(0b1110))
 
@@ -118,7 +120,7 @@ public:
 		assert(code<4);
 		assert(arrayPos < KMER_U64_ARRAY_SIZE);
 		#endif
-		m_u64[arrayPos] &= ~(0b11 << bitLocation); // clear previous set bits
+		m_u64[arrayPos] &= ~(KMER_2BITMASK << bitLocation); // clear previous set bits
 		m_u64[arrayPos] |= (code << bitLocation); // set new bits
 	}
 
@@ -129,7 +131,7 @@ public:
 		#ifdef ASSERT
 		assert(arrayPos < KMER_U64_ARRAY_SIZE);
 		#endif
-		return(m_u64[arrayPos] & (0b11 << bitLocation)); // retrieve bits from position
+		return(m_u64[arrayPos] & (KMER_2BITMASK >> bitLocation)); // retrieve bits from position
 	}
 
 	INLINE
