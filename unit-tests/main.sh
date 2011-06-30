@@ -12,3 +12,5 @@ do
 done
 
 ) | tee UnitTests.txt
+
+echo "Wrote results in UnitTests.txt"
