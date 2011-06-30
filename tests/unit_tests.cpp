@@ -14,7 +14,6 @@ int main(){
 	int result = 0;
 	cout << "Checking ColorSpaceCodec:\n";
 	result += ColorSpaceCodec::check()?0:1;
-	cout << "Checking Read:\n";
 	result += Read::check()?0:1;
 	return result;
 }

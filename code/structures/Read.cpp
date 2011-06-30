@@ -55,7 +55,7 @@ string Read::trim(string sequence){
 	//cout<<"In='"<<out<<"'"<<endl;
 	// discard N at the beginning and end of the read.
 	// erase up to the first symbol that is a A,T,C or G
-	int startPos = 0;
+	uint8_t startPos = 0;
 	while((startPos < out.length()) && (out.at(startPos) == 'N')){
 		startPos++;
 	}
@@ -290,93 +290,36 @@ bool Read::check(){
 	MyAllocator ma;
 	ma.constructor(4194304,14,false); // from Loader::constructor
 	Read colorSpaceRead1("T32002333220000303130320033020032123301032223033002", &ma, true);
-	string   csConv1bs("TAGGGATATCTTTTTAATGCCGAAATAAGGGCTGATAACCGAGATTATTTC");
-	string   csConv1cs("32002333220000303130320033020032123301032223033002");
-	string csConv1csde("TGAAGTTTGGAAAATATCTATGAATTAGAATGCGTTACATGGGTATTAAG");
 	Read colorSpaceRead2("T32002333220000303130320033..0032123301.3222303....", &ma, true);
-	string   csConv2bs("TAGGGATATCTTTTTAATGCCGAAATAAAAATCAGCGGTTAGAGCCG");
-	string   csConv2cs("3200233322000030313032003300003212330103222303");
 	Read baseSpaceRead1("ACACCACGCAAAATATTTGCTCCAGCTCCTTTCATT", &ma, true);
-	string   bsConv1cs("11101133100033300132201232202002130");
 	Read baseSpaceRead2("ZZAC6ACGCXAAATAT55ACTCCAGCTCC..RCA..", &ma, true);
 	// note: after cleaning and trimming, reads are stored internally,
 	// replacing 'N' with 'A' or '0'.
-	string   bsConv2cs("1101331000333300122012322010011");
-	string   bsConv2bs("ACAACGCAAAATATAAACTCCAGCTCCAAACA");
 	char buffer[4000];
-	bool lastResult = true;
-	bool allResults = true;
-	cout << "1: checking colour-space encoding converted to double-encoded base-space... ";
+	UnitTestHarness uth("Read");
+	uth.preProcessTest("colour-space encoding converted to double-encoded base-space");
 	colorSpaceRead1.getSeq(buffer,false,true); // this may produce a warning
-	lastResult = (csConv1bs.compare(buffer) == 0); allResults = allResults && lastResult;
-	if(!lastResult) {
-		cout << "Conversion failed\n" << buffer << endl
-				<< csConv1bs << " expected\n";
-	} else {
-		cout << "success!\n";
-	}
-	cout << "2: checking colour-space encoding converted to colour-space... ";
+	uth.compareOutput(buffer, "TAGGGATATCTTTTTAATGCCGAAATAAGGGCTGATAACCGAGATTATTTC");
+	uth.preProcessTest("colour-space encoding converted to colour-space");
 	colorSpaceRead1.getSeq(buffer,true,false);
-	lastResult = (csConv1cs.compare(buffer) == 0); allResults = allResults && lastResult;
-	if(!lastResult) {
-		cout << "Conversion failed\n" << buffer << endl
-				<< csConv1cs << " expected\n";
-	} else {
-		cout << "success!\n";
-	}
-	cout << "3: checking colour-space encoding converted to double-encoded colour-space... ";
+	uth.compareOutput(buffer, "32002333220000303130320033020032123301032223033002");
+	uth.preProcessTest("colour-space encoding converted to double-encoded colour-space");
 	colorSpaceRead1.getSeq(buffer,true,true);
-	lastResult = (csConv1csde.compare(buffer) == 0); allResults = allResults && lastResult;
-	if(!lastResult) {
-		cout << "Conversion failed\n" << buffer << endl
-				<< csConv1csde << " expected\n";
-	} else {
-		cout << "success!\n";
-	}
-	cout << "4: checking colour-space encoding with misreads converted to base-space... ";
+	uth.compareOutput(buffer, "TGAAGTTTGGAAAATATCTATGAATTAGAATGCGTTACATGGGTATTAAG");
+	uth.preProcessTest("colour-space encoding with misreads converted to base-space");
 	colorSpaceRead2.getSeq(buffer,false,false);
-	lastResult = (csConv2bs.compare(buffer) == 0); allResults = allResults && lastResult;
-	if(!lastResult) {
-		cout << "Conversion failed\n" << buffer << endl
-				<< csConv2bs << " expected\n";
-	} else {
-		cout << "success!\n";
-	}
-	cout << "5: checking colour-space encoding with misreads converted to colour-space... ";
+	uth.compareOutput(buffer, "TAGGGATATCTTTTTAATGCCGAAATAAAAATCAGCGGTTAGAGCCG");
+	uth.preProcessTest("colour-space encoding with misreads converted to colour-space");
 	colorSpaceRead2.getSeq(buffer,true,false);
-	lastResult = (csConv2cs.compare(buffer) == 0); allResults = allResults && lastResult;
-	if(!lastResult) {
-		cout << "Conversion failed\n" << buffer << endl
-				<< csConv2cs << " expected\n";
-	} else {
-		cout << "success!\n";
-	}
-	cout << "6: checking base-space encoding converted to colour-space... ";
+	uth.compareOutput(buffer, "3200233322000030313032003300003212330103222303");
+	uth.preProcessTest("base-space encoding converted to colour-space");
 	baseSpaceRead1.getSeq(buffer,true,false);
-	lastResult = (bsConv1cs.compare(buffer) == 0); allResults = allResults && lastResult;
-	if(!lastResult) {
-		cout << "Conversion failed\n" << buffer << endl
-				<< bsConv1cs << " expected\n";
-	} else {
-		cout << "success!\n";
-	}
-	cout << "7: checking base-space encoding with misreads converted to colour-space... ";
+	uth.compareOutput(buffer, "11101133100033300132201232202002130");
+	uth.preProcessTest("base-space encoding with misreads converted to colour-space");
 	baseSpaceRead2.getSeq(buffer,true,false);
-	lastResult = (bsConv2cs.compare(buffer) == 0); allResults = allResults && lastResult;
-	if(!lastResult) {
-		cout << "Conversion failed\n" << buffer << endl
-				<< bsConv2cs << " expected\n";
-	} else {
-		cout << "success!\n";
-	}
-	cout << "7: checking base-space encoding with misreads converted to base-space... ";
+	uth.compareOutput(buffer, "1101331000333300122012322010011");
+	uth.preProcessTest("base-space encoding with misreads converted to base-space");
 	baseSpaceRead2.getSeq(buffer,false,false);
-	lastResult = (bsConv2bs.compare(buffer) == 0); allResults = allResults && lastResult;
-	if(!lastResult) {
-		cout << "Conversion failed\n" << buffer << endl
-				<< bsConv2bs << " expected\n";
-	} else {
-		cout << "success!\n";
-	}
-	return allResults;
+	uth.compareOutput(buffer, "ACAACGCAAAATATAAACTCCAGCTCCAAACA");
+	return uth.getSuccess();
 }

@@ -209,6 +209,9 @@ code/assembler/ray_main.o code/assembler/ExtensionData.o
 obj-y += code/assembler/KmerAcademyBuilder.o
 obj-y += code/assembler/EdgePurger.o code/assembler/EdgePurgerWorker.o
 
+#unit test harness
+obj-y += code/core/UnitTestHarness.o
+
 # inference rule
 %.o: %.cpp
 	@echo "  MPICXX" $<
