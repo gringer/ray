@@ -27,6 +27,7 @@
 #include <stdint.h>
 #include <vector>
 #include <string>
+#include <iostream>
 #ifdef ASSERT
 #include <assert.h>
 #endif
@@ -99,7 +100,10 @@ public:
 	void pack(uint64_t*messageBuffer,int*messagePosition);
 	void unpack(uint64_t*messageBuffer,int*messagePosition);
 	void unpack(vector<uint64_t>*messageBuffer,int*messagePosition);
-	string toString(bool showFirstBase);
+	string toBSString(int wordsize);
+	string toString(int wordsize, bool showFirstBase);
+	Kmer rComp(int wordSize);
+	char getLastSymbol(int wordSize);
 	void operator=(const Kmer&b);
 	bool isColorSpace() const;
 	bool operator<(const Kmer&b)const;
@@ -121,8 +125,9 @@ public:
 		assert(code<4);
 		assert(arrayPos < KMER_U64_ARRAY_SIZE);
 		#endif
-		m_u64[arrayPos] &= ~(KMER_2BITMASK << bitLocation); // clear previous set bits
-		m_u64[arrayPos] |= (code << bitLocation); // set new bits
+		// note: cast to uint64_t is necessary to make shift work correctly
+		m_u64[arrayPos] &= ~((uint64_t)KMER_2BITMASK << bitLocation); // clear previous set bits
+		m_u64[arrayPos] |= ((uint64_t)code << bitLocation); // set new bits
 	}
 
 	INLINE
@@ -132,7 +137,9 @@ public:
 		#ifdef ASSERT
 		assert(arrayPos < KMER_U64_ARRAY_SIZE);
 		#endif
-		return(m_u64[arrayPos] & (KMER_2BITMASK >> bitLocation)); // retrieve bits from position
+		int code = ((m_u64[arrayPos] >> bitLocation) & KMER_2BITMASK);
+		//cout << "found piece at location " << bitLocation << " as " << code << endl;
+		return(code); // retrieve bits from position
 	}
 
 	INLINE

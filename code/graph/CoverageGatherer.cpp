@@ -39,6 +39,7 @@ void CoverageGatherer::writeKmers(){
 	#ifdef ASSERT
 	uint64_t n=0;
 	#endif
+	int m_wordSize = m_parameters->getWordSize();
 	if(m_subgraph->getKmerAcademy()->size()==0){
 		(*m_slaveMode)=RAY_SLAVE_MODE_DO_NOTHING;
 		Message aMessage(NULL,0,MASTER_RANK,RAY_MPI_TAG_COVERAGE_END,
@@ -47,7 +48,7 @@ void CoverageGatherer::writeKmers(){
 		return;
 	}
 	GridTableIterator iterator;
-	iterator.constructor(m_subgraph,m_parameters->getWordSize(),m_parameters);
+	iterator.constructor(m_subgraph,m_wordSize,m_parameters);
 	FILE*kmerFile=NULL;
 	ostringstream name;
 	name<<m_parameters->getPrefix()<<".kmers.txt";
@@ -88,12 +89,12 @@ void CoverageGatherer::writeKmers(){
 		#ifdef ASSERT
 		n++;
 		#endif
-		string kmerSequence=key.toString(true);
-		vector<Kmer> parents=node->getIngoingEdges(&key,m_parameters->getWordSize());
-		vector<Kmer> children=node->getOutgoingEdges(&key,m_parameters->getWordSize());
+		string kmerSequence=key.toString(m_wordSize, true);
+		vector<Kmer> parents=node->getIngoingEdges(&key,m_wordSize);
+		vector<Kmer> children=node->getOutgoingEdges(&key,m_wordSize);
 		fprintf(kmerFile,"%s;%i;",kmerSequence.c_str(),coverage);
 		for(int i=0;i<(int)parents.size();i++){
-			string printableVersion=parents[i].toString(true);
+			string printableVersion=parents[i].toString(m_wordSize, true);
 			if(i!=0)
 				fprintf(kmerFile," ");
 
@@ -101,11 +102,11 @@ void CoverageGatherer::writeKmers(){
 		}
 		fprintf(kmerFile,";");
 		for(int i=0;i<(int)children.size();i++){
-			string printableVersion=children[i].toString(true);
+			string printableVersion=children[i].toString(m_wordSize, true);
 			if(i!=0)
 				fprintf(kmerFile," ");
 
-			fprintf(kmerFile,"%c",printableVersion[m_parameters->getWordSize()-1]);
+			fprintf(kmerFile,"%c",printableVersion[m_wordSize-1]);
 		}
 		fprintf(kmerFile,"\n");
 	}

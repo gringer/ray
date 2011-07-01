@@ -121,10 +121,10 @@ string convertToString(vector<Kmer>*b,int m_wordSize,bool color){
 		a<<codeToChar(getFirstSegmentFirstCode((*b)[p],m_wordSize));
 	}
 	#else
-	a<<((*b)[0]).toString(false); //TODO: for now, because there would be scaffolder problems otherwise
+	a<<((*b)[0]).toString(m_wordSize, false); //TODO: for now, because there would be scaffolder problems otherwise
 	#endif
 	for(int j=1;j<(int)(*b).size();j++){
-		a<<getLastSymbol(&(*b)[j],m_wordSize,color);
+		a<<(*b)[j].getLastSymbol(m_wordSize);
 	}
 	string contig=a.str();
 	return contig;
@@ -202,8 +202,7 @@ void showMemoryUsage(int rank){
 
 vector<Kmer> _getOutgoingEdges(Kmer*a,uint8_t edges,int k){
 	vector<Kmer> b;
-	Kmer aTemplate;
-	aTemplate=*a;
+	Kmer aTemplate(*a);
 
 	for(int i=0;i<aTemplate.getNumberOfU64();i++){
 		uint64_t word=aTemplate.getU64(i)>>2;

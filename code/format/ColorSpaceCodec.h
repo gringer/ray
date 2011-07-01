@@ -38,9 +38,11 @@ class ColorSpaceCodec{
 	static char bsChrToBS(char tChr);
 	static char bsIntToBS(uint8_t tInt);
 	static char csIntToCS(uint8_t tInt, bool doubleEncoding);
+	static int complement(int codeB);
 	static bool isColorSpace(string sequence);
 	static string transformCStoDE(string csInput);
-	static int mapBStoCS(int base1, int base2);
+	static int mapBStoCS(int mapX, int mapY);
+	static int mapCStoBS(int mapB, int mapC);
 	static string decodeCStoBS(string csInput);
 	static string decodeCStoBS(string csInput, bool reverseComplement);
 	static string encodeBStoCS(string bsInput);

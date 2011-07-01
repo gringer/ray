@@ -290,12 +290,12 @@ int*receivedVertexCoverage,bool*edgesReceived,vector<Kmer>*receivedOutgoingEdges
 		#ifdef SHOW_EXTEND_WITH_SEED
 		cout<<"Error: The seed contains a choice not supported by the graph."<<endl;
 		cout<<"Extension length: "<<ed->m_EXTENSION_extension->size()<<" vertices"<<endl;
-		cout<<"position="<<ed->m_EXTENSION_currentPosition<<" "<< (ed->m_EXTENSION_currentSeed[ed->m_EXTENSION_currentPosition]).toString(true)<<" with "<<ed->m_enumerateChoices_outgoingEdges.size()<<" choices ";
+		cout<<"position="<<ed->m_EXTENSION_currentPosition<<" "<< (ed->m_EXTENSION_currentSeed[ed->m_EXTENSION_currentPosition]).toString(wordSize, true)<<" with "<<ed->m_enumerateChoices_outgoingEdges.size()<<" choices ";
 		cout<<endl;
 		cout<<"Seed length: "<<ed->m_EXTENSION_currentSeed.size()<<" vertices"<<endl;
 		cout<<"Choices: ";
 		for(int i=0;i<(int)ed->m_enumerateChoices_outgoingEdges.size();i++){
-			cout<<" "<<(ed->m_enumerateChoices_outgoingEdges[i]).toString(true);
+			cout<<" "<<(ed->m_enumerateChoices_outgoingEdges[i]).toString(wordSize, true);
 		}
 		cout<<endl;
 		cout<<"ComplementSeed="<<ed->m_EXTENSION_complementedSeed<<endl;
@@ -367,10 +367,7 @@ int*receivedVertexCoverage,bool*edgesReceived,vector<Kmer>*receivedOutgoingEdges
 				}else{
 					PairedRead*pairedRead=element->getPairedRead();
 					uint64_t uniqueReadIdentifier=pairedRead->getUniqueId();
-					int diff=uniqueId-uniqueReadIdentifier;
-					if(uniqueReadIdentifier>uniqueId){
-						diff=uniqueReadIdentifier-uniqueId;
-					}
+					int diff=abs(uniqueId-uniqueReadIdentifier); //TODO: what is diff used for?
 					int library=pairedRead->getLibrary();
 					int expectedFragmentLength=m_parameters->getLibraryAverageLength(library);
 					int expectedDeviation=m_parameters->getLibraryStandardDeviation(library);
@@ -645,7 +642,7 @@ map<Kmer,set<Kmer> >*arcs,map<Kmer,int>*coverages,int depth,set<Kmer>*visited){
 		for(int j=0;j<depth;j++)
 			printf(" ");
 		Kmer child=*i;
-		string s=child.toString(false);
+		string s=child.toString(m_parameters->getWordSize(), false);
 		#ifdef ASSERT
 		assert(coverages->count(*i)>0);
 		#endif
@@ -656,7 +653,7 @@ map<Kmer,set<Kmer> >*arcs,map<Kmer,int>*coverages,int depth,set<Kmer>*visited){
 		printf("%s coverage: %i depth: %i\n",s.c_str(),coverage,depth);
 
 		if(coverages->count(*i)==0||coverage==0){
-			cout<<"Error: "<<child.toString(true)<<" doesn't have a coverage value"<<endl;
+			cout<<"Error: "<<child.toString(m_parameters->getWordSize(),true)<<" doesn't have a coverage value"<<endl;
 		}
 
 		if(depth==1)
@@ -690,7 +687,7 @@ Kmer *currentVertex,BubbleData*bubbleData){
 			}
 			printf("\n");
 			printf("Tree\n");
-			string s=currentVertex->toString(true);
+			string s=currentVertex->toString(m_parameters->getWordSize(), true);
 			printf("%s %i\n",s.c_str(),ed->m_currentCoverage);
 			set<Kmer> visited;
 			printTree(*currentVertex,&arcs,
@@ -1054,7 +1051,7 @@ void SeedExtender::inspect(ExtensionData*ed,Kmer*currentVertex){
 	int wordSize=m_parameters->getWordSize();
 	cout<<endl;
 	cout<<"*****************************************"<<endl;
-	cout<<"CurrentVertex="<<currentVertex->toString(true)<<" @"<<ed->m_EXTENSION_extension->size()<<endl;
+	cout<<"CurrentVertex="<<currentVertex->toString(wordSize, true)<<" @"<<ed->m_EXTENSION_extension->size()<<endl;
 	#ifdef ASSERT
 	assert(ed->m_currentCoverage<=m_parameters->getMaximumAllowedCoverage());
 	#endif
@@ -1064,7 +1061,7 @@ void SeedExtender::inspect(ExtensionData*ed,Kmer*currentVertex){
 
 	cout<<endl;
 	for(int i=0;i<(int)ed->m_enumerateChoices_outgoingEdges.size();i++){
-		string vertex=(ed->m_enumerateChoices_outgoingEdges[i]).toString(true);
+		string vertex=(ed->m_enumerateChoices_outgoingEdges[i]).toString(wordSize, true);
 		Kmer key=ed->m_enumerateChoices_outgoingEdges[i];
 		cout<<endl;
 		cout<<"Choice #"<<i+1<<endl;
@@ -1201,7 +1198,7 @@ void SeedExtender::printExtensionStatus(Kmer*currentVertex){
 	}
 	#endif
 	printf("Rank %i reached %i vertices (%s) from seed %i\n",theRank,theCurrentSize,
-		currentVertex->toString(true).c_str(),
+		currentVertex->toString(m_parameters->getWordSize(), true).c_str(),
 		m_ed->m_EXTENSION_currentSeedIndex+1);
 
 	fflush(stdout);

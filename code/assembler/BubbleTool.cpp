@@ -31,13 +31,13 @@ void BubbleTool::printStuff(Kmer root,vector<vector<Kmer> >*trees,
 map<Kmer,int>*coverages){
 	int m_wordSize=m_parameters->getWordSize();
 	cout<<"Trees="<<trees->size()<<endl;
-	cout<<"root="<<root.toString(true)<<endl;
+	cout<<"root="<<root.toString(m_wordSize, true)<<endl;
 	cout<<"digraph{"<<endl;
 	map<Kmer,set<Kmer> > printedEdges;
 	
 	for(map<Kmer ,int>::iterator i=coverages->begin();i!=coverages->end();i++){
 		Kmer kmer=i->first;
-		cout<<kmer.toString(true)<<" [label=\""<<kmer.toString(true)<<" "<<i->second<<"\"]"<<endl;
+		cout<<kmer.toString(m_wordSize, true)<<" [label=\""<<kmer.toString(m_wordSize, true)<<" "<<i->second<<"\"]"<<endl;
 	}
 	for(int j=0;j<(int)trees->size();j++){
 		for(int i=0;i<(int)trees->at(j).size();i+=2){
@@ -49,7 +49,7 @@ map<Kmer,int>*coverages){
 			if(printedEdges.count(a)>0 && printedEdges[a].count(b)>0){
 				continue;
 			}
-			cout<<a.toString(true)<<" -> "<<b.toString(true)<<endl;
+			cout<<a.toString(m_wordSize, true)<<" -> "<<b.toString(m_wordSize, true)<<endl;
 			printedEdges[a].insert(b);
 		}
 	}
@@ -74,8 +74,8 @@ map<Kmer ,int>*coverages){
 		for(int j=0;j<(int)trees->at(i).size();j+=2){
 			Kmer a=trees->at(i).at(j+0);
 			Kmer b=trees->at(i).at(j+1);
-			string as=a.toString(false);
-			string bs=b.toString(false);
+			string as=a.toString(m_wordSize, false);
+			string bs=b.toString(m_wordSize, false);
 			assert(as.substr(1,m_wordSize-1)==bs.substr(0,m_wordSize-1));
 		}
 	}
@@ -104,7 +104,7 @@ map<Kmer ,int>*coverages){
 			Kmer a=trees->at(j).at(i+1);
 			#ifdef ASSERT
 			if(coverages->count(a)==0){
-				cout<<a.toString(true)<<" has no coverage."<<endl;
+				cout<<a.toString(m_wordSize, true)<<" has no coverage."<<endl;
 			}
 			assert(coverages->count(a)>0);
 			#endif
@@ -237,7 +237,7 @@ map<Kmer ,int>*coverages){
 		
 		if(m_parameters->debugBubbles()){
 			cout<<"This is a genuine bubble"<<endl;
-			cout<<"root="<<root.toString(true)<<" target="<<target.toString(true)<<endl;
+			cout<<"root="<<root.toString(m_wordSize, true)<<" target="<<target.toString(m_wordSize, true)<<endl;
 		}
 
 		return true;

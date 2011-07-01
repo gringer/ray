@@ -39,6 +39,18 @@ ColorSpaceCodec::ColorSpaceCodec(){
 }
 
 /*
+ * Complements a base that is encoded as [0123] (or 4 for unknown)
+ */
+int ColorSpaceCodec::complement(int codeB){
+	if(codeB > 3){
+		return 4;
+	} else {
+		// 0/A <-> 3/T, 1/C <-> 2/G
+		return (3-codeB);
+	}
+}
+
+/*
  * Convert a character to double-encoded colour-space. Any character
  * not in colour-space ([0123], or [ACGT] for double-encoded sequence) is
  * converted to 'N'.
@@ -165,6 +177,23 @@ int ColorSpaceCodec::mapBStoCS(int mapX, int mapY){
 		}
 	}
 }
+
+/*
+ * convert a base/colour pair into a base code
+ */
+int ColorSpaceCodec::mapCStoBS(int mapB, int mapC){
+	if((mapB >= 4) || (mapC >= 4)){
+		return 4;
+	} else {
+		if(mapB % 2 == 0){
+			return ((mapB + mapC) % 4);
+		} else {
+			// add 4 to avoid modulus becoming negative
+			return(((mapB - mapC) + 4) % 4);
+		}
+	}
+}
+
 
 /*
  * decode color-space read into base-space, assuming it has a starting base.
