@@ -63,11 +63,6 @@ uint8_t charToCode(char a);
 bool isValidDNA(char*x);
 
 /*
- * get the last letter of a uint64_t
- */
-char getLastSymbol(Kmer*i,int w,bool color);
-
-/*
  * complement a vertex, and return another one
  */
 INLINE
@@ -97,12 +92,6 @@ Kmer complementVertex(Kmer*a,int wordSize,bool colorSpace){
  * add line breaks to a string
  */
 string addLineBreaks(string sequence,int a);
-
-/*
- * use mini distant segments here.
- */
-uint8_t getFirstSegmentFirstCode(Kmer*v,int w);
-uint8_t getSecondSegmentLastCode(Kmer*v,int w);
 
 string convertToString(vector<Kmer>*b,int m_wordSize,bool color);
 

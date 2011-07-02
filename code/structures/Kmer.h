@@ -103,7 +103,10 @@ public:
 	string toBSString(int wordsize);
 	string toString(int wordsize, bool showFirstBase);
 	Kmer rComp(int wordSize);
-	char getLastSymbol(int wordSize);
+	int getFirstCode(bool asColorSpace);
+	char getFirstSymbol(bool asColorSpace);
+	int getLastCode(int wordSize, bool asColorSpace);
+	char getLastSymbol(int wordSize, bool asColorSpace);
 	void operator=(const Kmer&b);
 	bool isColorSpace() const;
 	bool operator<(const Kmer&b)const;

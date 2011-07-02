@@ -65,10 +65,6 @@ string reverseComplement(string*a){
 	return b.str();
 }
 
-char getLastSymbol(Kmer*i,int m_wordSize,bool color){
-	return codeToChar(getSecondSegmentLastCode(i,m_wordSize),color);
-}
-
 bool isValidDNA(char*x){
 	int len=strlen(x);
 	for(int i=0;i<len;i++){
@@ -89,26 +85,6 @@ string addLineBreaks(string dna,int columns){
 	return output.str();
 }
 
-uint8_t getSecondSegmentLastCode(Kmer* v,int w){
-	int bitPosition=2*w;
-	int chunkId=bitPosition/64;
-	int bitPositionInChunk=bitPosition%64;
-	uint64_t chunk=v->getU64(chunkId);
-	chunk=(chunk<<(sizeof(uint64_t)*8-bitPositionInChunk))>>(sizeof(uint64_t)*8-2); // clecar bits
-	
-	return (uint8_t)chunk;
-}
-
-uint8_t getFirstSegmentFirstCode(Kmer*v,int w){
-	// ATCAGTTGCAGTACTGCAATCTACG
-	// 0000000000000011100001100100000000000000000000000001011100100100
-	//                                                   6 5 4 3 2 1 0
-	uint64_t a=v->getU64(0);
-	a=a<<(sizeof(uint64_t)*8-2);
-	a=a>>(sizeof(uint64_t)*8-2);
-	return a;
-}
-
 string convertToString(vector<Kmer>*b,int m_wordSize,bool color){
 	ostringstream a;
 	#ifdef USE_DISTANT_SEGMENTS_GRAPH
@@ -124,7 +100,7 @@ string convertToString(vector<Kmer>*b,int m_wordSize,bool color){
 	a<<((*b)[0]).toString(m_wordSize, false); //TODO: for now, because there would be scaffolder problems otherwise
 	#endif
 	for(int j=1;j<(int)(*b).size();j++){
-		a<<(*b)[j].getLastSymbol(m_wordSize);
+		a<<(*b)[j].getLastSymbol(m_wordSize,(*b)[j].isColorSpace());
 	}
 	string contig=a.str();
 	return contig;

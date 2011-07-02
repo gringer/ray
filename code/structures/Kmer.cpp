@@ -118,16 +118,80 @@ void Kmer::printPieces(){
 	printf("\n");
 }
 
-char Kmer::getLastSymbol(int wordSize){
+int Kmer::getFirstCode(bool asColorSpace){
 	#ifdef ASSERT
 	assert(checkSum());
 	#endif
-	bool colorSpace = ((getPiece(0) & KMER_COLORSPACE) != 0);
-	int code = getPiece(wordSize);
-	if(!colorSpace){
-		return CSC::bsIntToBS(code);
+	bool isColorSpace = ((getPiece(0) & KMER_COLORSPACE) != 0);
+	if(asColorSpace){
+			if(isColorSpace){
+				// piece 0 flags, piece 1 firstBase...
+				// colour-space sequence begins from piece 2
+				return(getPiece(2)); 
+			} else {
+				return(CSC::mapBStoCS(getPiece(1),getPiece(2)));
+			}
 	} else {
-		return CSC::csIntToCS(code, false);
+		bool firstBaseKnown = ((getPiece(0) & KMER_FIRSTBASE_KNOWN) != 0);
+		if(firstBaseKnown){
+			return(getPiece(1));
+		} else {
+			// first base unknown, so [0-3] are all equally bad
+			// and piece 1 contains the checksum
+			return(4); // well... you did ask...
+		}
+	}
+}
+
+
+char Kmer::getFirstSymbol(bool asColorSpace){
+	if(asColorSpace){
+		bool firstBaseKnown = ((getPiece(0) & KMER_FIRSTBASE_KNOWN) != 0);
+		if(!firstBaseKnown){
+			return 'N';
+		}
+		return CSC::csIntToCS(getFirstCode(asColorSpace),false);
+	} else {
+		return CSC::bsIntToBS(getFirstCode(asColorSpace));
+	}
+}
+
+int Kmer::getLastCode(int wordSize, bool asColorSpace){
+	#ifdef ASSERT
+	assert(checkSum());
+	#endif
+	bool isColorSpace = ((getPiece(0) & KMER_COLORSPACE) != 0);
+	if(asColorSpace == isColorSpace){
+			// add 1 for flags
+			return(getPiece(wordSize+1));
+	}
+	bool firstBaseKnown = ((getPiece(0) & KMER_FIRSTBASE_KNOWN) != 0);
+	if(asColorSpace && !firstBaseKnown){
+		return(4);
+	}
+	// these will be somewhat expensive to calculate
+	int lastBaseCode = getPiece(1);
+	for(int i = 1; i < (wordSize); i++){
+		int code = getPiece(i+1);
+		if(isColorSpace){
+			lastBaseCode = CSC::mapCStoBS(lastBaseCode,code);
+		} else {
+			lastBaseCode = CSC::mapBStoCS(lastBaseCode,code);
+		}
+	}
+	return lastBaseCode;
+}
+
+
+char Kmer::getLastSymbol(int wordSize, bool asColorSpace){
+	if(asColorSpace){
+		bool firstBaseKnown = ((getPiece(0) & KMER_FIRSTBASE_KNOWN) != 0);
+		if(!firstBaseKnown){
+			return 'N';
+		}
+		return CSC::csIntToCS(getLastCode(wordSize,asColorSpace),false);
+	} else {
+		return CSC::bsIntToBS(getLastCode(wordSize,asColorSpace));
 	}
 }
 
