@@ -420,7 +420,7 @@ void Kmer::unpack(vector<uint64_t>*messageBuffer,int*messagePosition){
 }
 
 uint64_t Kmer::getHash_1(){
-	uint64_t key=0;
+	uint64_t key=m_u64[0];
 	for(int i=0;i<getNumberOfU64();i++){
 		uint64_t newKey = m_u64[i];
 		if(i == 0){
@@ -433,7 +433,7 @@ uint64_t Kmer::getHash_1(){
 }
 
 uint64_t Kmer::getHash_2(){
-	uint64_t key=0;
+	uint64_t key=m_u64[0];
 	for(int i=0;i<getNumberOfU64();i++){
 		uint64_t newKey = m_u64[i];
 		if(i == 0){
