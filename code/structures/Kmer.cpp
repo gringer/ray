@@ -28,11 +28,10 @@
 #include <format/ColorSpaceCodec.h>
 
 Kmer::Kmer(string sequence){
-	#ifdef ASSERT
-	// note: a sequence AGCT will be indistinguishable from AGCTAAAAAAAAAA in base-space
-	//       and AGCTTTTTTTTTTTT in colour-space
-	assert(sequence.length() <= MAXKMERLENGTH);
-	#endif
+	// Based on previous code, if a sequence can fit in the number of
+	// allocated uint64_t, then the transfer is allowed, even if the
+	// sequence is greater than MAXKMERLENGTH
+	// so, limit range checking to that done in set/get Piece
 	clear();
 	int checkSum = 0;
 	bool colorSpace = CSC::isColorSpace(sequence);
@@ -304,9 +303,13 @@ char Kmer::getLastSymbol(int wordSize, bool asColorSpace){
 }
 
 string Kmer::toString(int wordSize, bool showFirstBase){
+	// Based on previous code, if the asked-for length fits in the number of
+	// allocated uint64_t, then the request is allowed, even if the
+	// sequence is greater than MAXKMERLENGTH (so things beyond that length
+	// should be undefined)
+	// so, limit range checking to that done in set/get Piece
 	#ifdef ASSERT
 	assert(checkSum());
-	assert(wordSize <= MAXKMERLENGTH);
 	#endif
 	string out("");
 	out.reserve(wordSize);

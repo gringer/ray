@@ -131,9 +131,12 @@ public:
 		assert(code<4);
 		assert(arrayPos < KMER_U64_ARRAY_SIZE);
 		#endif
-		// note: cast to uint64_t is necessary to make shift work correctly
-		m_u64[arrayPos] &= ~((uint64_t)KMER_2BITMASK << bitLocation); // clear previous set bits
-		m_u64[arrayPos] |= ((uint64_t)code << bitLocation); // set new bits
+		// add in some range checking
+		if(arrayPos < KMER_U64_ARRAY_SIZE){
+			// note: cast to uint64_t is necessary to make shift work correctly
+			m_u64[arrayPos] &= ~((uint64_t)KMER_2BITMASK << bitLocation); // clear previous set bits
+			m_u64[arrayPos] |= ((uint64_t)code << bitLocation); // set new bits
+		}
 	}
 
 	INLINE
@@ -143,9 +146,13 @@ public:
 		#ifdef ASSERT
 		assert(arrayPos < KMER_U64_ARRAY_SIZE);
 		#endif
-		int code = ((m_u64[arrayPos] >> bitLocation) & KMER_2BITMASK);
-		//cout << "found piece at location " << bitLocation << " as " << code << endl;
-		return(code); // retrieve bits from position
+		if(arrayPos < KMER_U64_ARRAY_SIZE){
+			int code = ((m_u64[arrayPos] >> bitLocation) & KMER_2BITMASK);
+			return(code); // retrieve bits from position
+		} else {
+			//cout << "error: attempt to access out of array bounds" << endl;
+			return -1;
+		}
 	}
 
 	INLINE
