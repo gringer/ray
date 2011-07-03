@@ -114,6 +114,9 @@ int vertexRank(Kmer*a,int _size,int w,bool color){
 }
 
 Kmer kmerAtPosition(const char*m_sequence,int pos,int w,char strand,bool color){
+	#ifdef ASSERT
+	assert(w<=MAXKMERLENGTH);
+	#endif
 	int length=strlen(m_sequence);
 	if(pos>length-w){
 		cout<<"Fatal: offset is too large: position= "<<pos<<" Length= "<<length<<" WordSize=" <<w<<endl;
@@ -124,15 +127,13 @@ Kmer kmerAtPosition(const char*m_sequence,int pos,int w,char strand,bool color){
 		exit(0);
 	}
 	if(strand=='F'){
-		//TODO: what if the kmer size is 100, or greater?... sequence[w] will be out of bounds
-		char sequence[100];
+		char sequence[MAXKMERLENGTH];
 		memcpy(sequence,m_sequence+pos,w);
 		sequence[w]='\0';
 		Kmer v(sequence);
 		return v;
 	}else if(strand=='R'){
-		//TODO: what if the kmer size is 100, or greater?... sequence[w] will be out of bounds
-		char sequence[100];
+		char sequence[MAXKMERLENGTH];
 		memcpy(sequence,m_sequence+length-pos-w,w);
 		sequence[w]='\0';
 		Kmer v(sequence);
@@ -176,6 +177,10 @@ void showMemoryUsage(int rank){
 	#endif
 }
 
+/**
+ * Get the outgoing edges
+ * one bit (1=yes, 0=no) per possible edge
+ */
 vector<Kmer> _getOutgoingEdges(Kmer*a,uint8_t edges,int k){
 	vector<Kmer> b;
 	Kmer aTemplate(*a);

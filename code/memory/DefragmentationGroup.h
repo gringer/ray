@@ -27,6 +27,12 @@
  * this is the number of values of uint16_t */
 #define ELEMENTS_PER_GROUP 65536 
 
+/**
+ * Number of fast pointers
+ * Fast pointers is a list of SmallSmartPointer that can be used.
+ */
+#define FAST_POINTERS 256
+
 #include <stdint.h>
 
 /**
@@ -36,10 +42,11 @@
 typedef uint16_t SmallSmartPointer;
 
 class DefragmentationGroup{
-	/** number of available elements */
-	uint32_t m_availableElements;
+	/** freed stuff to accelerate things. */
+	uint16_t m_availablePointers[FAST_POINTERS];
+	
 	/** last free position */
-	uint16_t m_lastFreePosition;
+	int m_lastFreePosition;
 
 	/**
  * 	Pointer to allocated memory
@@ -57,6 +64,7 @@ class DefragmentationGroup{
 	/**
  * 	the offsets
  * 	these will change during defragmentation
+ * 	128 KiB
  */
 	uint16_t*m_allocatedOffsets;
 
@@ -76,13 +84,46 @@ class DefragmentationGroup{
  */
 	void setBit(int a,int b);
 
-	void defragment(uint16_t offset,uint8_t allocationLength);
+/**
+ * 	Move all elements starting at newOffset+allocationLength up to m_lastFreePosition
+ * 	by allocationLength positions on the left
+ */
+	void moveElementsToCloseGap(int offset,int allocationLength,int period);
+
+/**
+ * get a SmallSmartPointer
+ */
+	SmallSmartPointer getAvailableSmallSmartPointer();
+
 public:
+/**
+ * Initialize pointers to NULL
+ */
 	void setPointers();
+
+/** 
+ * Initialiaze DefragmentationGroup
+ */
 	void constructor(int period,bool show);
-	SmallSmartPointer allocate(int n);
-	void deallocate(SmallSmartPointer a);
+
+/**
+ * Allocate memory
+ */
+	SmallSmartPointer allocate(int n,int period);
+
+/**
+ * Free memory
+ * deallocate will defragment the block immediately
+ */
+	void deallocate(SmallSmartPointer a,int period);
+/** 
+ * destroy the allocator
+ */
 	void destructor(bool show);
+
+/**
+ * can the allocator allocate n elements ?
+ */
 	bool canAllocate(int n);
 
 	/**
@@ -95,9 +136,10 @@ public:
  */
 	bool isOnline();
 
+/**
+ * return the number of available elements 
+ */
 	int getAvailableElements();
-
-	void print();
 };
 
 #endif
