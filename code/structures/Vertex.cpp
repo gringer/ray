@@ -53,9 +53,9 @@ int Vertex::getCoverage(Kmer*a){
 
 vector<Kmer> Vertex::getIngoingEdges(Kmer *a,int k){
 	if((*a)==m_lowerKey){
-		return _getIngoingEdges(a,m_edges_lower,k);
+		return a->getIngoingEdges(m_edges_lower, k);
 	}
-	return _getIngoingEdges(a,m_edges_higher,k);
+	return a->getIngoingEdges(m_edges_higher, k);
 }
 
 vector<Kmer> Vertex::getOutgoingEdges(Kmer*a,int k){

@@ -43,6 +43,7 @@ class ColorSpaceCodec{
 	static string transformCStoDE(string csInput);
 	static int mapBStoCS(int mapX, int mapY);
 	static int mapCStoBS(int mapB, int mapC);
+	static int revMapCStoBS(int mapC, int mapB);
 	static string decodeCStoBS(string csInput);
 	static string decodeCStoBS(string csInput, bool reverseComplement);
 	static string encodeBStoCS(string bsInput);

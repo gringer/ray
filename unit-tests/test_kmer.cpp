@@ -185,11 +185,10 @@ void test_Ingoing_large2(){
 	uint8_t edges=(1<<0);
 
 	Kmer aKmer(a);
-	assertEquals(getFirstSegmentFirstCode(&aKmer,wordSize),RAY_NUCLEOTIDE_A);
+	assertEquals(aKmer.getFirstCode(false),RAY_NUCLEOTIDE_A);
 
 	Kmer bKmer(b);
-	
-	vector<Kmer>inEdges=_getIngoingEdges(&bKmer,edges,wordSize);
+	vector<Kmer>inEdges=bKmer.getIngoingEdges(edges,wordSize);
 	Kmer actual=inEdges[0];
 	string actualStr=actual.toString(wordSize, true);
 	if(actualStr!=a){
@@ -234,7 +233,7 @@ void test_Ingoing_large(){
 	Kmer aKmer(a);
 	Kmer bKmer(b);
 	
-	vector<Kmer>inEdges=_getIngoingEdges(&bKmer,edges,wordSize);
+	vector<Kmer>inEdges=bKmer.getIngoingEdges(edges,wordSize);
 	Kmer actual=inEdges[0];
 	string actualStr=actual.toString(wordSize, true);
 	if(actualStr!=a){
@@ -319,7 +318,7 @@ void test_Ingoing(){
 	Kmer aKmer(a);
 	Kmer bKmer(b);
 	
-	vector<Kmer>inEdges=_getIngoingEdges(&bKmer,edges,wordSize);
+	vector<Kmer>inEdges=bKmer.getIngoingEdges(edges,wordSize);
 	Kmer actual=inEdges[0];
 	string actualStr=actual.toString(wordSize, true);
 	if(actualStr!=a){
@@ -353,8 +352,8 @@ int main(int argc,char**argv){
 	Kmer empty;
 	string result=id.toString(wordSize, true);
 	assert(seq==result);
-	char last=seq[seq.length()-1];
-	char observed=id.getLastSymbol(wordSize);
+	char last=seq.at(seq.length()-1);
+	char observed=id.getLastSymbol(wordSize, false);
 	assert(observed==last);
 
 
@@ -372,7 +371,7 @@ int main(int argc,char**argv){
 	// ingoing edges.
 	//
 	uint8_t edges=0xff;
-	vector<Kmer>inEdges=_getIngoingEdges(&id,edges,wordSize);
+	vector<Kmer>inEdges=id.getIngoingEdges(edges,wordSize);
 	assertEquals(4,inEdges.size());
 	set<string> tmp;
 	for(int i=0;i<(int)inEdges.size();i++){

@@ -163,7 +163,9 @@ string ColorSpaceCodec::transformCStoDE(string csInput){
 }
 
 /*
- * convert a base-space pair into a colour-space code
+ * convert a base-space pair into a colour-space code. This function behaves
+ * the same as the colour-space to base-space map, but is a different function
+ * to improve code readability when called from elsewhere.
  */
 int ColorSpaceCodec::mapBStoCS(int mapX, int mapY){
 	if((mapX >= 4) || (mapY >= 4)){
@@ -194,6 +196,24 @@ int ColorSpaceCodec::mapCStoBS(int mapB, int mapC){
 	}
 }
 
+/*
+ * convert a colour/base pair into a base code (i.e. work out what the base
+ * prior to the colour should be). This function behaves the same as the
+ * forward map, but is a different function to improve code readability when
+ * called from elsewhere.
+ */
+int ColorSpaceCodec::revMapCStoBS(int mapC, int mapB){
+	if((mapB >= 4) || (mapC >= 4)){
+		return 4;
+	} else {
+		if(mapB % 2 == 0){
+			return ((mapB + mapC) % 4);
+		} else {
+			// add 4 to avoid modulus becoming negative
+			return(((mapB - mapC) + 4) % 4);
+		}
+	}
+}
 
 /*
  * decode color-space read into base-space, assuming it has a starting base.
