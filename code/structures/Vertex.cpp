@@ -60,9 +60,9 @@ vector<Kmer> Vertex::getIngoingEdges(Kmer *a,int k){
 
 vector<Kmer> Vertex::getOutgoingEdges(Kmer*a,int k){
 	if(*a==m_lowerKey){
-		return _getOutgoingEdges(a,m_edges_lower,k);
+		return a->getOutgoingEdges(m_edges_lower,k);
 	}
-	return _getOutgoingEdges(a,m_edges_higher,k);
+	return a->getOutgoingEdges(m_edges_higher,k);
 }
 
 void Vertex::addIngoingEdge_ClassicMethod(Kmer*vertex,Kmer*a,int k){

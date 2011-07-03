@@ -203,9 +203,9 @@ void SeedWorker::do_1_1_test(){
 
 			m_cache[m_SEEDING_currentVertex]=coverage;
 
-			m_SEEDING_receivedIngoingEdges=_getIngoingEdges(&m_SEEDING_currentVertex,edges,m_wordSize);
+			m_SEEDING_receivedIngoingEdges=m_SEEDING_currentVertex.getIngoingEdges(edges,m_wordSize);
 
-			m_SEEDING_receivedOutgoingEdges=_getOutgoingEdges(&m_SEEDING_currentVertex,edges,m_wordSize);
+			m_SEEDING_receivedOutgoingEdges=m_SEEDING_currentVertex.getOutgoingEdges(edges,m_wordSize);
 
 			m_ingoingCoverages.clear();
 			m_outgoingCoverages.clear();

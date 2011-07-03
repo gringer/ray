@@ -97,7 +97,7 @@ string convertToString(vector<Kmer>*b,int m_wordSize,bool color){
 		a<<codeToChar(getFirstSegmentFirstCode((*b)[p],m_wordSize));
 	}
 	#else
-	a<<((*b)[0]).toString(m_wordSize, false); //TODO: for now, because there would be scaffolder problems otherwise
+	a<<((*b)[0]).toString(m_wordSize, false); //TODO: false for now, because there may be scaffolder problems otherwise
 	#endif
 	for(int j=1;j<(int)(*b).size();j++){
 		a<<(*b)[j].getLastSymbol(m_wordSize,(*b)[j].isColorSpace());
@@ -175,49 +175,6 @@ void showMemoryUsage(int rank){
 	}
 	f.close();
 	#endif
-}
-
-/**
- * Get the outgoing edges
- * one bit (1=yes, 0=no) per possible edge
- */
-vector<Kmer> _getOutgoingEdges(Kmer*a,uint8_t edges,int k){
-	vector<Kmer> b;
-	Kmer aTemplate(*a);
-
-	for(int i=0;i<aTemplate.getNumberOfU64();i++){
-		uint64_t word=aTemplate.getU64(i)>>2;
-		if(i!=aTemplate.getNumberOfU64()-1){
-			uint64_t next=aTemplate.getU64(i+1);
-/*
- *		abcd	efgh
- *		00ab	00ef
- *		00ab	cdef
- */
-			next=(next<<62);
-			word=word|next;
-		}
-		aTemplate.setU64(i,word);
-	}
-
-	int positionToUpdate=2*k;
-	int chunkIdToUpdate=positionToUpdate/64;
-	positionToUpdate=positionToUpdate%64;
-
-	for(int i=0;i<4;i++){
-		int j=((((uint64_t)edges)<<(sizeof(uint64_t)*8-5-i))>>(sizeof(uint64_t)*8-1));
-		if(j==1){
-			Kmer newKmer=aTemplate;
-			uint64_t last=newKmer.getU64(chunkIdToUpdate);
-			uint64_t filter=i;
-			filter=filter<<(positionToUpdate-2);
-			last=last|filter;
-			newKmer.setU64(chunkIdToUpdate,last);
-			b.push_back(newKmer);
-		}
-	}
-
-	return b;
 }
 
 uint64_t hash_function_1(Kmer*a){

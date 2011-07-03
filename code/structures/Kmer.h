@@ -104,6 +104,7 @@ public:
 	string toString(int wordsize, bool showFirstBase);
 	Kmer rComp(int wordSize);
 	vector<Kmer> getIngoingEdges(uint8_t edges,int wordSize);
+	vector<Kmer> getOutgoingEdges(uint8_t edges,int wordSize);
 	int getFirstCode(bool asColorSpace);
 	char getFirstSymbol(bool asColorSpace);
 	int getLastCode(int wordSize, bool asColorSpace);

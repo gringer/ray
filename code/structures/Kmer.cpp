@@ -126,10 +126,10 @@ void Kmer::printPieces(){
  * then the bit-packed representation is 0b1101
  *
  * This function generates a vector of all Kmers generated from inserting
- * bases/colours into the start of this Kmer.
+ * bases/colours into the start of this Kmer (pushing a base off the end).
  */
 vector<Kmer> Kmer::getIngoingEdges(uint8_t edges,int wordSize){
-	vector<Kmer> allEdges;
+	vector<Kmer> inEdges;
 	Kmer kmerTemplate;
 	kmerTemplate.setPiece(0,getPiece(0)); // this copies the flags across
 	int tempCheckSum = 0;
@@ -143,7 +143,7 @@ vector<Kmer> Kmer::getIngoingEdges(uint8_t edges,int wordSize){
 		kmerTemplate.setPiece(i+1, nextPiece);
 	}
 	for(int code = 0; code < 4; code++, edges >>= 1){
-		if(edges & 1 == 1){
+		if((edges & 1) == 1){
 			// copy from the template
 			Kmer kmerIn(kmerTemplate);
 			// add the new edge to the start of the Kmer
@@ -160,11 +160,67 @@ vector<Kmer> Kmer::getIngoingEdges(uint8_t edges,int wordSize){
 				}
 			}
 			// finally, send to vector
-			allEdges.push_back(kmerIn);
+			inEdges.push_back(kmerIn);
 		}
 	}
-	return allEdges;
+	return inEdges;
 }
+
+/*
+ * edges is a 4-bit packed boolean array indicating which bases (or colours)
+ * are ingoing edges for the Vertex that includes this Kmer. e.g. if A,G,T
+ * (or 0,2,3) are all possible incoming edges (prefixes) for the vertex,
+ * then the bit-packed representation is 0b1101
+ *
+ * This function generates a vector of all Kmers generated from inserting
+ * bases/colours at the end of this Kmer (pushing a base off the start).
+ *
+ * This function is very similar to getIngoing edges:
+ *   * sequence is shifted from (i+1) to (i), rather than (i) to (i+1)
+ *   * outgoing edges are stored in upper 4 bits (so >> 4 prior to adding edges)
+ *   * replacement piece is set is at wordSize, rather than sequence start
+ *   * first base is recalculated by stepping one base forward
+ */
+vector<Kmer> Kmer::getOutgoingEdges(uint8_t edges,int wordSize){
+	vector<Kmer> outEdges;
+	Kmer kmerTemplate;
+	kmerTemplate.setPiece(0,getPiece(0)); // this copies the flags across
+	int tempCheckSum = 0;
+	bool isCS = isColorSpace();
+	bool fbKnown = firstBaseKnown();
+	int startPiece = isCS?2:1;
+	for(int i = startPiece; i < (wordSize); i++){
+		// shift sequence 'down' one base/colour
+		int nextPiece = getPiece(i+1);
+		tempCheckSum = (tempCheckSum + nextPiece) % 4;
+		kmerTemplate.setPiece(i, nextPiece);
+	}
+	// outgoing edges are stored in the high bits, so shift down 4
+	edges >>= 4;
+	for(int code = 0; code < 4; code++, edges >>= 1){
+		if((edges & 1) == 1){
+			// copy from the template
+			Kmer kmerOut(kmerTemplate);
+			// add the new edge to the start of the Kmer
+			kmerOut.setPiece(wordSize,code);
+			// place first base / checksum (for colour-space Kmers)
+			if(isCS){
+				if(!fbKnown){
+					// first base unknown, so generate checksum
+					kmerOut.setPiece(1,(4 - ((tempCheckSum + code) % 4)) % 4);
+				} else {
+					// recalculate first base by stepping forward 1
+					// A0X -> [0]|AX, A1X -> [1]|CX, etc.
+					kmerOut.setPiece(1, CSC::mapCStoBS(code,getPiece(1)));
+				}
+			}
+			// finally, send to vector
+			outEdges.push_back(kmerOut);
+		}
+	}
+	return outEdges;
+}
+
 
 int Kmer::getFirstCode(bool asColorSpace){
 	#ifdef ASSERT
@@ -254,22 +310,21 @@ string Kmer::toString(int wordSize, bool showFirstBase){
 	#endif
 	string out("");
 	out.reserve(wordSize);
-	int flags = getPiece(0);
-	bool colorSpace = this->isColorSpace();
-	bool firstBaseKnown = this->firstBaseKnown();
+	bool isCS = isColorSpace();
+	bool fbKnown = firstBaseKnown();
 	for(int i = 0; i < wordSize; i++){
 		int code = getPiece(i+1);
 		if(i == 0){
-			if(showFirstBase || !colorSpace){
+			if(showFirstBase || !isCS){
 				// in base space, want to show everything
-				if(!firstBaseKnown){
+				if(!fbKnown){
 					out += "N";
 				} else {
 					out += CSC::bsIntToBS(code);
 				}
 			}
 		} else {
-			if(!colorSpace){
+			if(!isCS){
 				out += CSC::bsIntToBS(code);
 			} else {
 				out += CSC::csIntToCS(code, false);

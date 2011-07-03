@@ -143,7 +143,7 @@ void test_out_large(){
 	Kmer aKmer(a);
 	Kmer bKmer(b);
 	
-	vector<Kmer>oEdges=_getOutgoingEdges(&aKmer,edges,wordSize);
+	vector<Kmer>oEdges=aKmer.getOutgoingEdges(edges,wordSize);
 	assertEquals(oEdges.size(),1);
 
 	Kmer actual=oEdges[0];
@@ -274,7 +274,7 @@ void test_out(){
 	Kmer aKmer(a);
 	Kmer bKmer(b);
 	
-	vector<Kmer>oEdges=_getOutgoingEdges(&aKmer,edges,wordSize);
+	vector<Kmer>oEdges=aKmer.getOutgoingEdges(edges,wordSize);
 	assertEquals(oEdges.size(),1);
 
 	Kmer actual=oEdges[0];
@@ -397,7 +397,7 @@ int main(int argc,char**argv){
 	assertEquals(tmp.size(),4);
 
 	// test outgoing edges
-	vector<Kmer> outEdges=_getOutgoingEdges(&id,edges,wordSize);
+	vector<Kmer> outEdges=id.getOutgoingEdges(edges,wordSize);
 	assertEquals(4,outEdges.size());
 	tmp.clear();
 	for(int i=0;i<(int)outEdges.size();i++){

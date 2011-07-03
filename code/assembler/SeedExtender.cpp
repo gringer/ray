@@ -825,7 +825,7 @@ BubbleData*bubbleData,int minimumCoverage,OpenAssemblerChooser*oa,int wordSize,v
 		bool inserted;
 		*((m_cache.insert(*currentVertex,&m_cacheAllocator,&inserted))->getValue())=ed->m_currentCoverage;
 		uint64_t compactEdges=m_vertexMessenger.getEdges();
-		*receivedOutgoingEdges=_getOutgoingEdges(currentVertex,compactEdges,m_parameters->getWordSize());
+		*receivedOutgoingEdges=currentVertex->getOutgoingEdges(compactEdges,m_parameters->getWordSize());
 		ed->m_EXTENSION_extension->push_back((*currentVertex));
 		ed->m_extensionCoverageValues->push_back(*receivedVertexCoverage);
 
