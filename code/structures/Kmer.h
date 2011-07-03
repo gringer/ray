@@ -100,6 +100,8 @@ public:
 	void pack(uint64_t*messageBuffer,int*messagePosition);
 	void unpack(uint64_t*messageBuffer,int*messagePosition);
 	void unpack(vector<uint64_t>*messageBuffer,int*messagePosition);
+	uint64_t getHash_1();
+	uint64_t getHash_2();
 	string toBSString(int wordsize);
 	string toString(int wordsize, bool showFirstBase);
 	Kmer rComp(int wordSize);

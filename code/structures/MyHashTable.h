@@ -717,7 +717,7 @@ void MyHashTable<KEY,VALUE>::findBucketWithKey(KEY*key,uint64_t*probe,int*group,
  * 	The Art of Computer Programming, Volume 3, Second Edition
  */
 	/** between 0 and M-1 inclusively -- M is m_totalNumberOfBuckets */
-	int64_t h1=hash_function_2(key)%m_totalNumberOfBuckets;
+	int64_t h1=key->getHash_2()%m_totalNumberOfBuckets;
 	uint64_t bucket=h1;
 	(*group)=bucket/m_numberOfBucketsInGroup;
 
@@ -753,7 +753,7 @@ void MyHashTable<KEY,VALUE>::findBucketWithKey(KEY*key,uint64_t*probe,int*group,
  *
  * 			h(x)%(M-5)+"	-> between 1 and M-1 exclusive
  * 			*/
-			h2=hash_function_1(key)%(m_totalNumberOfBuckets-5)+2;
+			h2=key->getHash_1()%(m_totalNumberOfBuckets-5)+2;
 			
 			/** h2 can not be even */
 			if(h2%2==0)

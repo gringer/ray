@@ -26,6 +26,7 @@
 #include <vector>
 #include <core/common_functions.h>
 #include <format/ColorSpaceCodec.h>
+#include <cryptography/crypto.h>
 
 Kmer::Kmer(string sequence){
 	// Based on previous code, if a sequence can fit in the number of
@@ -382,7 +383,7 @@ Kmer Kmer::rComp(int wordSize){
 	// it is necessary to track through and convert to base
 	// space in order to get the reverse-complement first base
 	for(int piece = 0; piece < (wordSize-1); piece++){
-		int code = this->getPiece(piece+2);
+		int code = getPiece(piece+2);
 		checkSum = (checkSum + code) % 4;
 		lastBase = CSC::mapCStoBS(lastBase,code);
 		tRC.setPiece(wordSize - piece, code);
@@ -416,6 +417,32 @@ void Kmer::unpack(vector<uint64_t>*messageBuffer,int*messagePosition){
 		setU64(i,(*messageBuffer)[*messagePosition]);
 		(*messagePosition)++;
 	}
+}
+
+uint64_t Kmer::getHash_1(){
+	uint64_t key=0;
+	for(int i=0;i<getNumberOfU64();i++){
+		uint64_t newKey = m_u64[i];
+		if(i == 0){
+			// clear unknown bit and first base, as these may change
+			newKey &= KMER_CLEAR_FIRSTBASE;
+		}
+		key ^= uniform_hashing_function_1_64_64(newKey);
+	}
+	return key;
+}
+
+uint64_t Kmer::getHash_2(){
+	uint64_t key=0;
+	for(int i=0;i<getNumberOfU64();i++){
+		uint64_t newKey = m_u64[i];
+		if(i == 0){
+			// clear unknown bit and first base, as these may change
+			newKey &= KMER_CLEAR_FIRSTBASE;
+		}
+		key ^= uniform_hashing_function_2_64_64(newKey);
+	}
+	return key;
 }
 
 void Kmer::operator=(const Kmer&b){

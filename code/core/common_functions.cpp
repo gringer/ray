@@ -94,7 +94,7 @@ string convertToString(vector<Kmer>*b,int m_wordSize,bool color){
 	//  TTAATT
 	//  the first vertex can not fill in the first delta letter alone, it needs help.
 	for(int p=0;p<m_wordSize;p++){
-		a<<codeToChar(getFirstSegmentFirstCode((*b)[p],m_wordSize));
+		a<<(*b)[p].getFirstSymbol(m_wordSize, (*b)[j].isColorSpace());
 	}
 	#else
 	a<<((*b)[0]).toString(m_wordSize, false); //TODO: false for now, because there may be scaffolder problems otherwise
@@ -107,10 +107,10 @@ string convertToString(vector<Kmer>*b,int m_wordSize,bool color){
 }
 
 int vertexRank(Kmer*a,int _size,int w,bool color){
-	Kmer b=complementVertex(a,w,color);
+	Kmer b=a->rComp(w);
 	if(a->isLower(&b))
 		b=*a;
-	return hash_function_1(&b)%(_size);
+	return (b.getHash_1() % _size);
 }
 
 Kmer kmerAtPosition(const char*m_sequence,int pos,int w,char strand,bool color){
@@ -174,34 +174,6 @@ void showMemoryUsage(int rank){
 		}
 	}
 	f.close();
-	#endif
-}
-
-uint64_t hash_function_1(Kmer*a){
-	#if KMER_U64_ARRAY_SIZE == 1
-	return uniform_hashing_function_1_64_64(a->getU64(0));
-	#else
-	uint64_t key=a->getU64(0);
-	for(int i=0;i<KMER_U64_ARRAY_SIZE;i++){
-		uint64_t hash=uniform_hashing_function_1_64_64(a->getU64(i));
-		key^=hash;
-	}
-	return key;
-
-	#endif
-}
-
-uint64_t hash_function_2(Kmer*a){
-	#if KMER_U64_ARRAY_SIZE == 1
-	return uniform_hashing_function_2_64_64(a->getU64(0));
-	#else
-	uint64_t key=a->getU64(0);
-	for(int i=0;i<KMER_U64_ARRAY_SIZE;i++){
-		uint64_t hash=uniform_hashing_function_2_64_64(a->getU64(i));
-		key^=hash;
-	}
-	return key;
-
 	#endif
 }
 
