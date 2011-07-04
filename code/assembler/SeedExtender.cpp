@@ -600,8 +600,7 @@ size,theRank,outbox,receivedVertexCoverage,receivedOutgoingEdges,minimumCoverage
 			fflush(stdout);
 
 			for(int i=ed->m_EXTENSION_extension->size()-1;i>=0;i--){
-				complementedSeed.push_back(complementVertex(&(ed->m_EXTENSION_extension->at(i)),wordSize,
-					m_parameters->getColorSpaceMode()));
+				complementedSeed.push_back((ed->m_EXTENSION_extension->at(i)).rComp(wordSize));
 			}
 
 			ed->m_EXTENSION_currentPosition=0;

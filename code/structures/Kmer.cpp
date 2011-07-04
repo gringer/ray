@@ -53,6 +53,18 @@ Kmer::Kmer(string sequence){
 	}
 }
 
+/*
+ * Used for initializing from raw bit sequences (e.g. messages)
+ */
+Kmer::Kmer(uint64_t* rawBits){
+		for(int i=0;i<getNumberOfU64();i++){
+			m_u64[i]=rawBits[i];
+		}
+		#ifdef ASSERT
+		assert(checkSum());
+		#endif
+}
+
 Kmer::Kmer(const Kmer& b, bool convertToColourSpace){
 	clear();
 	if(!convertToColourSpace || ((b.m_u64[0] & (uint64_t)KMER_COLORSPACE) != 0)){
@@ -365,10 +377,18 @@ string Kmer::toBSString(int wordSize){
 	return out;
 }
 
+/*
+ * Return the reverse-complement of this Kmer. The reverse complement will
+ * be returned as a colour-space Kmer.
+ */
+
 Kmer Kmer::rComp(int wordSize){
+	// Based on previous code, if a sequence can fit in the number of
+	// allocated uint64_t, then the transfer is allowed, even if the
+	// sequence is greater than MAXKMERLENGTH
+	// so, limit range checking to that done in set/get Piece
 	#ifdef ASSERT
 	assert(checkSum());
-	assert(wordSize <= MAXKMERLENGTH);
 	#endif
 	int flags = getPiece(0);
 	bool colorSpace = ((flags & KMER_COLORSPACE) != 0);

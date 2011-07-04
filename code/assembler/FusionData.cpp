@@ -71,8 +71,9 @@ void FusionData::distribute(SeedingData*m_seedingData,ExtensionData*m_ed,int get
 
 	Kmer vertex=m_ed->m_EXTENSION_contigs[m_seedingData->m_SEEDING_i][m_ed->m_EXTENSION_currentPosition];
 	int destination=m_parameters->_vertexRank(&vertex);
+	//TODO: make sure this is doing the right thing (copying flags, etc)
 	for(int i=0;i<KMER_U64_ARRAY_SIZE;i++){
-		m_buffers.addAt(destination,vertex.getU64(i));
+		m_buffers.addAt(destination,vertex.getRawBits(i));
 	}
 	m_buffers.addAt(destination,m_ed->m_EXTENSION_identifiers[m_seedingData->m_SEEDING_i]);
 	m_buffers.addAt(destination,m_ed->m_EXTENSION_currentPosition);
@@ -670,7 +671,7 @@ void FusionData::makeFusions(){
 			assert(thePosition<(int)m_ed->m_EXTENSION_contigs[m_seedingData->m_SEEDING_i].size());
 			#endif
 			Kmer theMainVertex=m_ed->m_EXTENSION_contigs[m_seedingData->m_SEEDING_i][thePosition];
-			Kmer theVertex=complementVertex(&theMainVertex,m_wordSize,m_parameters->getColorSpaceMode());
+			Kmer theVertex=theMainVertex.rComp(m_wordSize);
 
 			if(!m_Machine_getPaths_DONE){
 				getPaths(theVertex);
@@ -687,7 +688,7 @@ void FusionData::makeFusions(){
 		}else if(!m_FUSION_last_done){
 			// get the paths going on the last vertex.
 
-			Kmer theVertex=complementVertex(&(m_ed->m_EXTENSION_contigs[m_seedingData->m_SEEDING_i][END_LENGTH]),m_wordSize,m_parameters->getColorSpaceMode());
+			Kmer theVertex=(m_ed->m_EXTENSION_contigs[m_seedingData->m_SEEDING_i][END_LENGTH]).rComp(m_wordSize);
 			if(!m_Machine_getPaths_DONE){
 				getPaths(theVertex);
 			}else{

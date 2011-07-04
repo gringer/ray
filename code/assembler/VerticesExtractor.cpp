@@ -118,8 +118,10 @@ void VerticesExtractor::process(int*m_mode_send_vertices_sequence_id,
 			int rankToFlush=0;
 
 			rankToFlush=m_parameters->_vertexRank(&a);
+			//TODO: make sure this is doing the right thing (copying flags, etc)
+			//      [same goes for all getRawBits accesses]
 			for(int i=0;i<KMER_U64_ARRAY_SIZE;i++){
-				m_bufferedData.addAt(rankToFlush,a.getU64(i));
+				m_bufferedData.addAt(rankToFlush,a.getRawBits(i));
 			}
 
 			if(m_bufferedData.flush(rankToFlush,KMER_U64_ARRAY_SIZE,RAY_MPI_TAG_VERTICES_DATA,m_outboxAllocator,m_outbox,rank,false)){
@@ -130,10 +132,10 @@ void VerticesExtractor::process(int*m_mode_send_vertices_sequence_id,
 				// outgoing edge
 				int outgoingRank=m_parameters->_vertexRank(&m_previousVertex);
 				for(int i=0;i<KMER_U64_ARRAY_SIZE;i++){
-					m_bufferedDataForOutgoingEdges.addAt(outgoingRank,m_previousVertex.getU64(i));
+					m_bufferedDataForOutgoingEdges.addAt(outgoingRank,m_previousVertex.getRawBits(i));
 				}
 				for(int i=0;i<KMER_U64_ARRAY_SIZE;i++){
-					m_bufferedDataForOutgoingEdges.addAt(outgoingRank,a.getU64(i));
+					m_bufferedDataForOutgoingEdges.addAt(outgoingRank,a.getRawBits(i));
 				}
 
 				if(m_bufferedDataForOutgoingEdges.needsFlushing(outgoingRank,2*KMER_U64_ARRAY_SIZE)){
@@ -149,10 +151,10 @@ void VerticesExtractor::process(int*m_mode_send_vertices_sequence_id,
 				// ingoing edge
 				int ingoingRank=m_parameters->_vertexRank(&a);
 				for(int i=0;i<KMER_U64_ARRAY_SIZE;i++){
-					m_bufferedDataForIngoingEdges.addAt(ingoingRank,m_previousVertex.getU64(i));
+					m_bufferedDataForIngoingEdges.addAt(ingoingRank,m_previousVertex.getRawBits(i));
 				}
 				for(int i=0;i<KMER_U64_ARRAY_SIZE;i++){
-					m_bufferedDataForIngoingEdges.addAt(ingoingRank,a.getU64(i));
+					m_bufferedDataForIngoingEdges.addAt(ingoingRank,a.getRawBits(i));
 				}
 
 				if(m_bufferedDataForIngoingEdges.needsFlushing(ingoingRank,2*KMER_U64_ARRAY_SIZE)){
@@ -167,11 +169,11 @@ void VerticesExtractor::process(int*m_mode_send_vertices_sequence_id,
 			}
 
 			// reverse complement
-			Kmer b=complementVertex(&a,wordSize,m_parameters->getColorSpaceMode());
+			Kmer b=a.rComp(wordSize);
 
 			rankToFlush=m_parameters->_vertexRank(&b);
 			for(int i=0;i<KMER_U64_ARRAY_SIZE;i++){
-				m_bufferedData.addAt(rankToFlush,b.getU64(i));
+				m_bufferedData.addAt(rankToFlush,b.getRawBits(i));
 			}
 
 			if(m_bufferedData.flush(rankToFlush,KMER_U64_ARRAY_SIZE,RAY_MPI_TAG_VERTICES_DATA,m_outboxAllocator,m_outbox,rank,false)){
@@ -182,10 +184,10 @@ void VerticesExtractor::process(int*m_mode_send_vertices_sequence_id,
 				// outgoing edge
 				int outgoingRank=m_parameters->_vertexRank(&b);
 				for(int i=0;i<KMER_U64_ARRAY_SIZE;i++){
-					m_bufferedDataForOutgoingEdges.addAt(outgoingRank,b.getU64(i));
+					m_bufferedDataForOutgoingEdges.addAt(outgoingRank,b.getRawBits(i));
 				}
 				for(int i=0;i<KMER_U64_ARRAY_SIZE;i++){
-					m_bufferedDataForOutgoingEdges.addAt(outgoingRank,m_previousVertexRC.getU64(i));
+					m_bufferedDataForOutgoingEdges.addAt(outgoingRank,m_previousVertexRC.getRawBits(i));
 				}
 
 				if(m_bufferedDataForOutgoingEdges.needsFlushing(outgoingRank,2*KMER_U64_ARRAY_SIZE)){
@@ -201,10 +203,10 @@ void VerticesExtractor::process(int*m_mode_send_vertices_sequence_id,
 				// ingoing edge
 				int ingoingRank=m_parameters->_vertexRank(&m_previousVertexRC);
 				for(int i=0;i<KMER_U64_ARRAY_SIZE;i++){
-					m_bufferedDataForIngoingEdges.addAt(ingoingRank,b.getU64(i));
+					m_bufferedDataForIngoingEdges.addAt(ingoingRank,b.getRawBits(i));
 				}
 				for(int i=0;i<KMER_U64_ARRAY_SIZE;i++){
-					m_bufferedDataForIngoingEdges.addAt(ingoingRank,m_previousVertexRC.getU64(i));
+					m_bufferedDataForIngoingEdges.addAt(ingoingRank,m_previousVertexRC.getRawBits(i));
 				}
 
 				if(m_bufferedDataForIngoingEdges.needsFlushing(ingoingRank,2*KMER_U64_ARRAY_SIZE)){

@@ -55,7 +55,7 @@ void test_addOutEdge(){
 	Vertex aVertex;
 	aVertex.constructor();
 	Kmer lower=aKmer;
-	Kmer aRC=complementVertex(&aKmer,wordSize,false);
+	Kmer aRC=aKmer.rComp(wordSize);
 
 	if(aRC<lower){
 		lower=aRC;
@@ -96,9 +96,9 @@ void test_addInEdge2(){
 
 	Vertex bVertex;
 	bVertex.constructor();
-	Kmer bRC=complementVertex(&bKmer,wordSize,false);
+	Kmer bRC=bKmer.rComp(wordSize);
 	Kmer lower=bKmer;
-	Kmer aRC=complementVertex(&aKmer,wordSize,false);
+	Kmer aRC=aKmer.rComp(wordSize);
 
 	if(bRC<lower){
 		lower=bRC;

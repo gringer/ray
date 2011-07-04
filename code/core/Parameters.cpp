@@ -1143,7 +1143,7 @@ void Parameters::setMinimumCoverage(int a){
 }
 
 Kmer Parameters::_complementVertex(Kmer*a){
-	return complementVertex(a,m_wordSize,m_colorSpaceMode);
+	return (a->rComp(m_wordSize));
 }
 
 bool Parameters::hasPairedReads(){

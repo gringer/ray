@@ -63,32 +63,6 @@ uint8_t charToCode(char a);
 bool isValidDNA(char*x);
 
 /*
- * complement a vertex, and return another one
- */
-INLINE
-Kmer complementVertex(Kmer*a,int wordSize,bool colorSpace){
-	Kmer output;
-	int bitPositionInOutput=0;
-	uint64_t mask=3;
-	for(int positionInMer=wordSize-1;positionInMer>=0;positionInMer--){
-		int u64_id=positionInMer/32;
-		int bitPositionInChunk=(2*positionInMer)%64;
-		uint64_t chunk=a->getU64(u64_id);
-		uint64_t j=(chunk<<(62-bitPositionInChunk))>>62;
-		
-		if(!colorSpace) /* in color space, reverse complement is just reverse */
-			j=~j&mask;
-
-		int outputChunk=bitPositionInOutput/64;
-		uint64_t oldValue=output.getU64(outputChunk);
-		oldValue=(oldValue|(j<<(bitPositionInOutput%64)));
-		output.setU64(outputChunk,oldValue);
-		bitPositionInOutput+=2;
-	}
-	return output;
-}
-
-/*
  * add line breaks to a string
  */
 string addLineBreaks(string sequence,int a);

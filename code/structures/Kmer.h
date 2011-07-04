@@ -90,6 +90,7 @@ class Kmer{
 public:
 	Kmer();
 	Kmer(string sequence);
+	Kmer(uint64_t* rawBits);
 	Kmer(const Kmer& b, bool convertToColourSpace);
 	~Kmer();
 	bool checkSum();
@@ -157,6 +158,17 @@ public:
 		}
 	}
 
+	int getNumberOfU64();
+	INLINE
+	uint64_t getRawBits(int arrayLocation) const{
+		#ifdef ASSERT
+		assert(arrayLocation<KMER_U64_ARRAY_SIZE);
+		#endif
+		return m_u64[arrayLocation];
+	}
+
+
+private:
 	INLINE
 	void setU64(int i,uint64_t b){
 		#ifdef ASSERT
@@ -172,8 +184,6 @@ public:
 		#endif
 		return m_u64[i];
 	}
-
-	int getNumberOfU64();
 
 }ATTRIBUTE_PACKED;
 

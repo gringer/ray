@@ -53,7 +53,7 @@ uint64_t KmerAcademy::size(){
  * Kmer objects.
  */
 KmerCandidate*KmerAcademy::find(Kmer*key){
-	Kmer lowerKey=complementVertex(key,m_parameters->getWordSize(),m_parameters->getColorSpaceMode());
+	Kmer lowerKey=key->rComp(m_parameters->getWordSize());
 	if(key->isLower(&lowerKey)){
 		lowerKey=*key;
 	}
@@ -61,7 +61,7 @@ KmerCandidate*KmerAcademy::find(Kmer*key){
 }
 
 KmerCandidate*KmerAcademy::insert(Kmer*key){
-	Kmer lowerKey=complementVertex(key,m_parameters->getWordSize(),m_parameters->getColorSpaceMode());
+	Kmer lowerKey=key->rComp(m_parameters->getWordSize());
 	if(key->isLower(&lowerKey)){
 		lowerKey=*key;
 	}

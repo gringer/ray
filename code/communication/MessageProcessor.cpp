@@ -366,10 +366,7 @@ void MessageProcessor::call_RAY_MPI_TAG_VERTEX_READS_FROM_LIST_REPLY(Message*mes
  */
 void MessageProcessor::call_RAY_MPI_TAG_VERTEX_READS_FROM_LIST(Message*message){
 	uint64_t*incoming=(uint64_t*)message->getBuffer();
-	Kmer vertex;
-	for(int i=0;i<vertex.getNumberOfU64();i++){
-		vertex.setU64(i,incoming[i]);
-	}
+	Kmer vertex(incoming);
 	Kmer complement=m_parameters->_complementVertex(&vertex);
 	int numberOfMates=incoming[KMER_U64_ARRAY_SIZE+1];
 	bool lower=vertex<complement;
@@ -1010,10 +1007,7 @@ void MessageProcessor::call_RAY_MPI_TAG_ATTACH_SEQUENCE(Message*message){
 	uint64_t*incoming=(uint64_t*)buffer;
 	for(int i=0;i<count;i+=KMER_U64_ARRAY_SIZE+4){
 		m_count++;
-		Kmer vertex;
-		for(int j=0;j<vertex.getNumberOfU64();j++){
-			vertex.setU64(j,incoming[i+j]);
-		}
+		Kmer vertex(incoming + i);
 		Kmer complement=m_parameters->_complementVertex(&vertex);
 		bool lower=vertex.isLower(&complement);
 		int rank=incoming[i+vertex.getNumberOfU64()];
@@ -1501,8 +1495,7 @@ void MessageProcessor::call_RAY_MPI_TAG_CLEAR_DIRECTIONS(Message*message){
 
 			vector<Kmer> rc;
 			for(int j=(m_ed->m_EXTENSION_contigs)[i].size()-1;j>=0;j--){
-				rc.push_back(complementVertex(&((m_ed->m_EXTENSION_contigs)[i][j]),*m_wordSize,
-					m_parameters->getColorSpaceMode()));
+				rc.push_back(((m_ed->m_EXTENSION_contigs)[i][j]).rComp(*m_wordSize));
 			}
 			fusions.push_back(rc);
 		}

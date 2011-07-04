@@ -19,15 +19,16 @@ void f2(){
 	map<int,int> counts;
 	
 	uint64_t samples=100000000;
-	uint64_t base=rand();
+	uint64_t base[2];
+	base[0] = rand();
+	// set to base-space to avoid checksum failures
+	base[0] &= ~(0b11); base[0] |= 0b10;
 	int wordSize=63;
-	Kmer kmer;
-	kmer.setU64(0,base);
 
 	int average=samples/size;
 	while(samples--){
-		uint64_t second=rand();
-		kmer.setU64(1,second);
+		base[1]=rand();
+		Kmer kmer(base);
 		int rank=vertexRank(&kmer,size,wordSize,false);
 		counts[rank]++;
 	}
@@ -54,17 +55,17 @@ void f1(){
 	map<int,int> counts;
 	
 	uint64_t samples=100000000;
-	uint64_t base=rand();
+	uint64_t base[2];
+	base[0] = rand();
 	int wordSize=63;
-	Kmer kmer;
-	kmer.setU64(0,base);
 
 	int average=samples/size;
 	while(samples--){
-		uint64_t first=rand();
-		uint64_t second=rand();
-		kmer.setU64(0,first);
-		kmer.setU64(1,second);
+		base[0]=rand();
+		// set to base-space to avoid checksum failures
+		base[0] &= ~(0b11); base[0] |= 0b10;
+		base[1]=rand();
+		Kmer kmer(base);
 		int rank=vertexRank(&kmer,size,wordSize,false);
 		counts[rank]++;
 	}

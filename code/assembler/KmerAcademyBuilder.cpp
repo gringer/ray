@@ -115,8 +115,9 @@ void KmerAcademyBuilder::process(int*m_mode_send_vertices_sequence_id,
 			int rankToFlush=0;
 
 			rankToFlush=m_parameters->_vertexRank(&a);
+			//TODO: raw bit access -- make sure this is processed correctly
 			for(int i=0;i<KMER_U64_ARRAY_SIZE;i++){
-				m_bufferedData.addAt(rankToFlush,a.getU64(i));
+				m_bufferedData.addAt(rankToFlush,a.getRawBits(i));
 			}
 
 			if(m_bufferedData.flush(rankToFlush,KMER_U64_ARRAY_SIZE,RAY_MPI_TAG_KMER_ACADEMY_DATA,m_outboxAllocator,m_outbox,rank,false)){
@@ -124,11 +125,12 @@ void KmerAcademyBuilder::process(int*m_mode_send_vertices_sequence_id,
 			}
 
 			// reverse complement
-			Kmer b=complementVertex(&a,wordSize,m_parameters->getColorSpaceMode());
+			Kmer b=a.rComp(wordSize);
 
 			rankToFlush=m_parameters->_vertexRank(&b);
+			//TODO: raw bit access -- make sure this is processed correctly
 			for(int i=0;i<KMER_U64_ARRAY_SIZE;i++){
-				m_bufferedData.addAt(rankToFlush,b.getU64(i));
+				m_bufferedData.addAt(rankToFlush,b.getRawBits(i));
 			}
 
 			if(m_bufferedData.flush(rankToFlush,KMER_U64_ARRAY_SIZE,RAY_MPI_TAG_KMER_ACADEMY_DATA,m_outboxAllocator,m_outbox,rank,false)){

@@ -137,7 +137,7 @@ Kmer kmerAtPosition(const char*m_sequence,int pos,int w,char strand,bool color){
 		memcpy(sequence,m_sequence+length-pos-w,w);
 		sequence[w]='\0';
 		Kmer v(sequence);
-		return complementVertex(&v,w,color);
+		return v.rComp(w);
 	}
 	Kmer error;
 	return error;
