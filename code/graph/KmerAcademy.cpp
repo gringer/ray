@@ -97,3 +97,11 @@ MyHashTable<Kmer,KmerCandidate>*KmerAcademy::getHashTable(){
 void KmerAcademy::printStatistics(){
 	m_hashTable.printStatistics();
 }
+
+void KmerAcademy::defragment(){
+	m_hashTable.defragment();
+}
+
+void KmerAcademy::completeResizing(){
+	m_hashTable.completeResizing();
+}

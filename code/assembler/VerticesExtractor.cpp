@@ -51,6 +51,9 @@ void VerticesExtractor::process(int*m_mode_send_vertices_sequence_id,
 	assert(m_pendingMessages>=0);
 	#endif
 	if(m_pendingMessages!=0){
+		/* defragment while waiting. */
+		/* TODO restore defrag */
+		//m_subgraph->defragment();
 		return;
 	}
 
@@ -237,7 +240,8 @@ void VerticesExtractor::process(int*m_mode_send_vertices_sequence_id,
 	}
 }
 
-void VerticesExtractor::constructor(int size,Parameters*parameters){
+void VerticesExtractor::constructor(int size,Parameters*parameters,GridTable*graph){
+	m_subgraph=graph;
 	m_parameters=parameters;
 	m_finished=false;
 	m_distributionIsCompleted=false;

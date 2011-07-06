@@ -51,11 +51,16 @@ void KmerAcademyBuilder::process(int*m_mode_send_vertices_sequence_id,
 	#ifdef ASSERT
 	assert(m_pendingMessages>=0);
 	#endif
-	if(m_inbox->size()>0&&m_inbox->at(0)->getTag()==RAY_MPI_TAG_KMER_ACADEMY_DATA_REPLY)
+	if(m_inbox->size()>0&&m_inbox->at(0)->getTag()==RAY_MPI_TAG_KMER_ACADEMY_DATA_REPLY){
 		m_pendingMessages--;
+	}
 
-	if(m_pendingMessages!=0)
+	if(m_pendingMessages!=0){
+		/** defragment the bytes while waiting ..*/
+		/* TODO restore defrag */
+		//m_subgraph->getKmerAcademy()->defragment();
 		return;
+	}
 
 	if(m_finished)
 		return;
@@ -66,7 +71,7 @@ void KmerAcademyBuilder::process(int*m_mode_send_vertices_sequence_id,
 		if(*m_reverseComplementVertex==true){
 			reverse="(reverse complement) ";
 		}
-		printf("Rank %i is counting k-mers %s[%i/%i]\n",rank,reverse.c_str(),(int)*m_mode_send_vertices_sequence_id+1,(int)m_myReads->size());
+		printf("Rank %i is counting k-mers in sequence reads %s[%i/%i]\n",rank,reverse.c_str(),(int)*m_mode_send_vertices_sequence_id+1,(int)m_myReads->size());
 		fflush(stdout);
 	}
 
@@ -82,7 +87,7 @@ void KmerAcademyBuilder::process(int*m_mode_send_vertices_sequence_id,
 				RAY_MPI_TAG_KMER_ACADEMY_DISTRIBUTED,rank);
 			m_outbox->push_back(aMessage);
 			m_finished=true;
-			printf("Rank %i is counting k-mers [%i/%i] (completed)\n",rank,(int)*m_mode_send_vertices_sequence_id,(int)m_myReads->size());
+			printf("Rank %i is counting k-mers in sequence reads [%i/%i] (completed)\n",rank,(int)*m_mode_send_vertices_sequence_id,(int)m_myReads->size());
 			fflush(stdout);
 			m_bufferedData.showStatistics(m_parameters->getRank());
 		}
@@ -146,7 +151,8 @@ void KmerAcademyBuilder::process(int*m_mode_send_vertices_sequence_id,
 	}
 }
 
-void KmerAcademyBuilder::constructor(int size,Parameters*parameters){
+void KmerAcademyBuilder::constructor(int size,Parameters*parameters,GridTable*graph){
+	m_subgraph=graph;
 	m_parameters=parameters;
 	m_finished=false;
 	m_distributionIsCompleted=false;

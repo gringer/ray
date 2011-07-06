@@ -354,7 +354,7 @@ void MessageProcessor::call_RAY_MPI_TAG_GET_VERTEX_EDGES_COMPACT(Message*message
 void MessageProcessor::call_RAY_MPI_TAG_GET_VERTEX_EDGES_COMPACT_REPLY(Message*message){}
 
 void MessageProcessor::call_RAY_MPI_TAG_BUILD_GRAPH(Message*message){
-	m_verticesExtractor->constructor(m_parameters->getSize(),m_parameters);
+	m_verticesExtractor->constructor(m_parameters->getSize(),m_parameters,m_subgraph);
 	*m_mode_send_vertices_sequence_id=0;
 	*m_mode=RAY_SLAVE_MODE_EXTRACT_VERTICES;
 }
@@ -472,6 +472,7 @@ void MessageProcessor::call_RAY_MPI_TAG_WRITE_KMERS(Message*message){
 
 void MessageProcessor::call_RAY_MPI_TAG_PURGE_NULL_EDGES(Message*message){
 	m_subgraph->getKmerAcademy()->destructor();
+	m_subgraph->completeResizing();
 
 	printf("Rank %i has %i vertices (completed)\n",rank,(int)m_subgraph->size());
 	fflush(stdout);
@@ -587,6 +588,8 @@ void MessageProcessor::call_RAY_MPI_TAG_PREPARE_COVERAGE_DISTRIBUTION_ANSWER(Mes
 }
 
 void MessageProcessor::call_RAY_MPI_TAG_PREPARE_COVERAGE_DISTRIBUTION(Message*message){
+	m_subgraph->getKmerAcademy()->completeResizing();
+
 	printf("Rank %i has %i k-mers (completed)\n",rank,(int)m_subgraph->getKmerAcademy()->size());
 	fflush(stdout);
 

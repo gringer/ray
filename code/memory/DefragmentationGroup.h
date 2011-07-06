@@ -18,7 +18,6 @@
 	see <http://www.gnu.org/licenses/>
 */
 
-
 #ifndef _DefragmentationGroup_H
 #define _DefragmentationGroup_H
 
@@ -42,11 +41,19 @@
 typedef uint16_t SmallSmartPointer;
 
 class DefragmentationGroup{
+	int m_offlineDefrags;
+	int m_onlineDefrags;
+
 	/** freed stuff to accelerate things. */
-	uint16_t m_availablePointers[FAST_POINTERS];
+	uint16_t m_fastPointers[FAST_POINTERS];
 	
+	/**
+ * the number of available elements
+ */
+	int m_availableElements;
+
 	/** last free position */
-	int m_lastFreePosition;
+	int m_freeSliceStart;
 
 	/**
  * 	Pointer to allocated memory
@@ -84,18 +91,22 @@ class DefragmentationGroup{
  */
 	void setBit(int a,int b);
 
-/**
- * 	Move all elements starting at newOffset+allocationLength up to m_lastFreePosition
- * 	by allocationLength positions on the left
+/** print the bitmap
  */
-	void moveElementsToCloseGap(int offset,int allocationLength,int period);
+	void print();
 
 /**
  * get a SmallSmartPointer
  */
 	SmallSmartPointer getAvailableSmallSmartPointer();
-
+	
 public:
+
+/*
+ * returns true if defragmented something. */
+	bool defragment(int bytesPerElement,uint16_t*content,bool online);
+
+
 /**
  * Initialize pointers to NULL
  */
@@ -104,18 +115,18 @@ public:
 /** 
  * Initialiaze DefragmentationGroup
  */
-	void constructor(int period,bool show);
+	void constructor(int bytesPerElement,bool show);
 
 /**
  * Allocate memory
  */
-	SmallSmartPointer allocate(int n,int period);
+	SmallSmartPointer allocate(int n,int bytesPerElement,uint16_t*content);
 
 /**
  * Free memory
  * deallocate will defragment the block immediately
  */
-	void deallocate(SmallSmartPointer a,int period);
+	void deallocate(SmallSmartPointer a,int bytesPerElement);
 /** 
  * destroy the allocator
  */
@@ -129,7 +140,7 @@ public:
 	/**
  * 	translate a SmallSmartPointer to an actual pointer
  */
-	void*getPointer(SmallSmartPointer a,int period);
+	void*getPointer(SmallSmartPointer a,int bytesPerElement);
 	
 	/**
  * 	return yes if activated
@@ -140,6 +151,11 @@ public:
  * return the number of available elements 
  */
 	int getAvailableElements();
+
+	int getFreeSliceStart();
+	
+
+	int getAllocationSize(SmallSmartPointer a);
 };
 
 #endif

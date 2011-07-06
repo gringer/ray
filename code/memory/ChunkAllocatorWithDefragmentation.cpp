@@ -27,43 +27,61 @@
 #include <iostream>
 using namespace std;
 
+void ChunkAllocatorWithDefragmentation::defragment(){
+	DefragmentationLane*lane=m_defragmentationLane;
+
+	while(lane!=NULL){
+		#ifdef ASSERT
+		assert(lane!=NULL);
+		#endif
+		for(int group=0;group<GROUPS_PER_LANE;group++){
+			if(lane->m_groups[group].isOnline()){
+				if(lane->m_groups[group].defragment(m_period,m_content,false))
+					return;
+			}else{
+				/* no group are online after this one since this one is not online */
+				break;
+			}
+		}
+		lane=(DefragmentationLane*)lane->m_next;
+	}
+}
+
 /**
 * print allocator information
 */
 void ChunkAllocatorWithDefragmentation::print(){
 	DefragmentationLane*lane=m_defragmentationLane;
 	int lanes=0;
-	int availableElements=0;
-
 	while(lane!=NULL){
 		lane=(DefragmentationLane*)lane->m_next;
 		lanes++;
 	}
 	cout<<"DefragmentationLanes: "<<lanes<<endl;
+
 	lanes=0;
 	lane=m_defragmentationLane;
 	while(lane!=NULL){
 		#ifdef ASSERT
 		assert(lane!=NULL);
 		#endif
-		cout<<"DefragmentationLane: "<<lanes<<" GROUPS_PER_LANE: "<<GROUPS_PER_LANE<<endl;
+		cout<<"DefragmentationLane: "<<lanes<<endl;
 		for(int group=0;group<GROUPS_PER_LANE;group++){
 			if(lane->m_groups[group].isOnline()){
-				availableElements+=lane->m_groups[group].getAvailableElements();
-				cout<<"  DefragmentationGroup: "<<group<<" usage: "<<(ELEMENTS_PER_GROUP-availableElements)<<"/"<<ELEMENTS_PER_GROUP<<endl;
+				int availableElements=lane->m_groups[group].getAvailableElements();
+				#ifdef ASSERT
+				int usedElements=(ELEMENTS_PER_GROUP-availableElements);
+				if(usedElements<0)
+					cout<<"group "<<group<<" ELEMENTS_PER_GROUP "<<ELEMENTS_PER_GROUP<<" availableElements "<<availableElements<<endl;
+				assert(usedElements>=0);
+				#endif
+
+				cout<<"  DefragmentationGroup: "<<group<<" usage: "<<(ELEMENTS_PER_GROUP-availableElements)<<"/"<<ELEMENTS_PER_GROUP<<" FreeSliceStart: "<<lane->m_groups[group].getFreeSliceStart()<<endl;
 			}
 		}
 		lane=(DefragmentationLane*)lane->m_next;
 		lanes++;
 	}
-	
-	cout<<"DefragmentationGroups: "<<GROUPS_PER_LANE*lanes<<endl;
-	cout<<"ActiveDefragmentationGroups: "<<m_activeGroups<<endl;
-	cout<<"ELEMENTS_PER_GROUP: "<<ELEMENTS_PER_GROUP<<endl;
-	int totalElements=m_activeGroups*ELEMENTS_PER_GROUP;
-	int allocated=totalElements-availableElements;
-	double ratio=(0.0+allocated)/totalElements*100;
-	cout<<"AllocatedElements: "<<allocated<<"/"<<totalElements<<" ("<<ratio<<"%"<<")"<<endl;
 }
 
 /** clear allocations */
@@ -89,22 +107,20 @@ void ChunkAllocatorWithDefragmentation::destructor(){
 
 /** constructor almost does nothing  */
 void ChunkAllocatorWithDefragmentation::constructor(int period,bool show){
-	m_activeGroups=0;
+	m_content=(uint16_t*)__Malloc(ELEMENTS_PER_GROUP*sizeof(uint16_t),RAY_MALLOC_TYPE_DEFRAG_LANE,show);
 	m_show=show;
 	m_period=period;
 	m_defragmentationLane=NULL;
+	m_fastLane=NULL;
 }
 
 /**
- * allocate memory
+ * update:
+ *  m_fastLane
+ *  m_fastGroup
+ *  m_fastLaneNumber
  */
-SmartPointer ChunkAllocatorWithDefragmentation::allocate(int n){
-	/** 64 is the number of buckets in a MyHashTableGroup */
-
-	#ifdef ASSERT
-	assert(n>=1&&n<=64);
-	#endif
-
+void ChunkAllocatorWithDefragmentation::updateFastLane(int n){
 	DefragmentationLane*lane=m_defragmentationLane;
 	DefragmentationLane*lastValidLane=m_defragmentationLane;
 	int laneId=0;
@@ -116,7 +132,6 @@ SmartPointer ChunkAllocatorWithDefragmentation::allocate(int n){
 			/** activate a lane */
 			if(!lane->m_groups[group].isOnline()){
 				lane->m_groups[group].constructor(m_period,m_show);
-				m_activeGroups++;
 			}
 
 			#ifdef ASSERT
@@ -129,19 +144,11 @@ SmartPointer ChunkAllocatorWithDefragmentation::allocate(int n){
 				assert(group<GROUPS_PER_LANE);
 				assert(lane->m_groups[group].isOnline());
 				#endif
-
-				SmallSmartPointer smallSmartPointer=lane->m_groups[group].allocate(n,m_period);
-
-				#ifdef ASSERT
-				assert(smallSmartPointer<ELEMENTS_PER_GROUP);
-				#endif
-	
-				/** build the SmartPointer with the
- *				SmallSmartPointer, DefragmentationLane id, and DefragmentationGroup id */
-				int globalGroup=laneId*GROUPS_PER_LANE+group;
-				SmartPointer smartPointer=globalGroup*ELEMENTS_PER_GROUP+smallSmartPointer;
-
-				return smartPointer;
+			
+				m_fastLane=lane;
+				m_fastLaneNumber=laneId;
+				m_fastGroup=group;
+				return;
 			}
 		}
 		lane=(DefragmentationLane*)lane->m_next;
@@ -159,16 +166,43 @@ SmartPointer ChunkAllocatorWithDefragmentation::allocate(int n){
 		defragmentationLane->m_groups[i].setPointers();
 	defragmentationLane->m_next=NULL;
 
+	defragmentationLane->m_groups[0].constructor(m_period,m_show);
+
+	m_fastLane=defragmentationLane;
+	m_fastGroup=0;
+	m_fastLaneNumber=laneId;
+
 	if(lastValidLane==NULL)
 		m_defragmentationLane=defragmentationLane;
 	else
 		lastValidLane->m_next=defragmentationLane;
-	
-	/** now we can call the same code again with the new line 
- * 	this is a recursive call
- * 	this case does happen often.
- * 	*/
-	return allocate(n);
+}
+
+/**
+ * allocate memory
+ */
+SmartPointer ChunkAllocatorWithDefragmentation::allocate(int n){ /** 64 is the number of buckets in a MyHashTableGroup */
+	#ifdef ASSERT
+	if(!(n>=1 && n<=64))
+		cout<<"n= "<<n<<endl;
+	assert(n>=1&&n<=64);
+	#endif
+
+	/** TODO keep fastLaneId and fastGroupId for faster look-up. */
+	if(m_fastLane==NULL || !m_fastLane->m_groups[m_fastGroup].canAllocate(n)){
+		updateFastLane(n);
+	}
+	#ifdef ASSERT
+	assert(m_fastLane->m_groups[m_fastGroup].canAllocate(n));
+	#endif
+
+	SmallSmartPointer smallSmartPointer=m_fastLane->m_groups[m_fastGroup].allocate(n,m_period,m_content);
+
+	/** build the SmartPointer with the
+ *	SmallSmartPointer, DefragmentationLane id, and DefragmentationGroup id */
+	int globalGroup=m_fastLaneNumber*GROUPS_PER_LANE+m_fastGroup;
+	SmartPointer smartPointer=globalGroup*ELEMENTS_PER_GROUP+smallSmartPointer;
+	return smartPointer;
 }
 
 /**
@@ -243,4 +277,24 @@ void*ChunkAllocatorWithDefragmentation::getPointer(SmartPointer a){
 	SmallSmartPointer smallSmartPointer=a%ELEMENTS_PER_GROUP;
 	return group->getPointer(smallSmartPointer,m_period);
 }
+
+int ChunkAllocatorWithDefragmentation::getAllocationSize(SmartPointer a){
+	if(a==SmartPointer_NULL)
+		return 0;
+
+	DefragmentationGroup*group=getGroup(a);
+
+	#ifdef ASSERT
+	assert(group!=NULL);
+	assert(group->isOnline());
+	#endif
+
+	/** the DefragmentationGroup knows how to do that */
+	SmallSmartPointer smallSmartPointer=a%ELEMENTS_PER_GROUP;
+	return group->getAllocationSize(smallSmartPointer);
+}
+
+ChunkAllocatorWithDefragmentation::ChunkAllocatorWithDefragmentation(){}
+
+ChunkAllocatorWithDefragmentation::~ChunkAllocatorWithDefragmentation(){}
 

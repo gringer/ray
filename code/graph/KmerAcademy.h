@@ -60,6 +60,8 @@ public:
 	void destructor();
 	MyHashTable<Kmer,KmerCandidate>*getHashTable();
 	void printStatistics();
+	void defragment();
+	void completeResizing();
 };
 
 #endif
