@@ -54,6 +54,65 @@ Kmer::Kmer(string sequence){
 }
 
 /*
+ * initialise Kmer to a subsequence of a given string. This should be
+ * optimised to remove the '*this =', so that only one Kmer is created
+ */
+Kmer::Kmer(string inSequence, int pos, int wordSize, char strand){
+	#ifdef ASSERT
+	assert(wordSize<=MAXKMERLENGTH);
+	#endif
+	clear();
+	int length = inSequence.length();
+	if(pos>(length-wordSize)){
+		cout << "Fatal: offset is too large: position= " << pos << " Length= "
+				<< length << " WordSize=" << wordSize << endl;
+		return;
+	}
+	if(pos<0){
+		cout<<"Fatal: negative offset. "<<pos<<endl;
+		return;
+	}
+	bool isCS = CSC::isColorSpace(inSequence);
+	if(!isCS){
+		if(strand == 'F'){
+			*this = Kmer(inSequence.substr(pos,wordSize));
+		} else if(strand == 'R'){
+			*this = Kmer(inSequence.substr(pos,wordSize)).rComp(wordSize);
+		}
+		return;
+	}
+	// When storing colour-space, need to find first base for the sub-sequence
+	char lastBase = inSequence.at(0);
+	// an unknown first base, or no first base
+	if(CSC::bsChrToBS(lastBase) == 'N'){
+		// the first character is not in base-space, but is it in colour-space
+		int colorSpaceStart = (CSC::csChrToInt(lastBase) <= 3)?0:1;
+		// if so, assume this sequence is in the middle of some other colour-space
+		// sequence, so the colour-space sequence starts at the beginning of the
+		// string, and the insertion of an unknown first-base is required
+		if(strand == 'F'){
+			*this = Kmer(inSequence.substr(pos+colorSpaceStart, wordSize - 1)
+					.insert(0,1,'N'));
+		} else if(strand == 'R'){
+			*this = Kmer(inSequence.substr(pos+colorSpaceStart, wordSize - 1)
+					.insert(0,1,'N')).rComp(wordSize);
+		}
+		return;
+	}
+	// first character in base space, assume remainder are in colour-space
+	// note that this also works for pos == 0
+	string priorDecode = CSC::decodeCStoBS(inSequence.substr(0,pos+1), false);
+	lastBase = priorDecode.at(priorDecode.length()-1);
+	// add/subtract 1 to account for first base insertion
+	if(strand == 'F'){
+		*this = Kmer(inSequence.substr(pos+1,wordSize-1).insert(0,1,lastBase));
+	} else if(strand == 'R'){
+		*this = Kmer(inSequence.substr(pos+1,wordSize-1).insert(0,1,lastBase))
+				.rComp(wordSize);
+	}
+}
+
+/*
  * Used for initializing from raw bit sequences (e.g. messages)
  */
 Kmer::Kmer(uint64_t* rawBits){
@@ -93,7 +152,8 @@ Kmer::Kmer(const Kmer& b, bool convertToColourSpace){
 
 Kmer::Kmer(){
 	clear();
-	setPiece(0,KMER_CS_FIRSTBASE_UNKNOWN); // make sure checksum is valid
+	// note: this Kmer has an invalid checksum, because it is not in
+	// colour space, but has an unknown first base
 }
 
 Kmer::~Kmer(){

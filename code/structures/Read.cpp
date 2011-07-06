@@ -221,7 +221,7 @@ int Read::length()const{
 Kmer Read::getVertex(int pos,int w,char strand,bool color) const {
 	char buffer[4000];
 	getSeq(buffer,color,false);
-	return kmerAtPosition(buffer,pos,w,strand,color);
+	return Kmer(string(buffer),pos,w,strand);
 }
 
 bool Read::hasPairedRead()const{

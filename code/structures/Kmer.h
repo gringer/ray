@@ -90,6 +90,7 @@ class Kmer{
 public:
 	Kmer();
 	Kmer(string sequence);
+	Kmer(string inSequence, int pos, int wordSize, char strand);
 	Kmer(uint64_t* rawBits);
 	Kmer(const Kmer& b, bool convertToColourSpace);
 	~Kmer();

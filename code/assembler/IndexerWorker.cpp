@@ -56,7 +56,7 @@ void IndexerWorker::work(){
 		if(m_position>m_theLength-m_parameters->getWordSize()){
 			m_fetchedCoverageValues=true;
 		}else if(!m_coverageRequested){
-			Kmer vertex=kmerAtPosition(m_sequence,m_position,m_parameters->getWordSize(),'F',m_parameters->getColorSpaceMode());
+			Kmer vertex(string(m_sequence),m_position,m_parameters->getWordSize(),'F');
 			m_vertices.push_back(vertex,m_allocator);
 			int sendTo=m_parameters->_vertexRank(&vertex);
 			uint64_t*message=(uint64_t*)m_outboxAllocator->allocate(1*sizeof(uint64_t));

@@ -356,7 +356,7 @@ int*receivedVertexCoverage,bool*edgesReceived,vector<Kmer>*receivedOutgoingEdges
 				assert(element->getType()==TYPE_SINGLE_END||element->getType()==TYPE_RIGHT_END||element->getType()==TYPE_LEFT_END);
 				#endif
 
-				ed->m_EXTENSION_receivedReadVertex=kmerAtPosition(theSequence,distance,wordSize,theRightStrand,m_parameters->getColorSpaceMode());
+				ed->m_EXTENSION_receivedReadVertex=Kmer(theSequence,distance,wordSize,theRightStrand);
 				// process each edge separately.
 				// got a match!
 

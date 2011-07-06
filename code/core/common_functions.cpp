@@ -113,36 +113,6 @@ int vertexRank(Kmer*a,int _size,int w,bool color){
 	return (b.getHash_1() % _size);
 }
 
-Kmer kmerAtPosition(const char*m_sequence,int pos,int w,char strand,bool color){
-	#ifdef ASSERT
-	assert(w<=MAXKMERLENGTH);
-	#endif
-	int length=strlen(m_sequence);
-	if(pos>length-w){
-		cout<<"Fatal: offset is too large: position= "<<pos<<" Length= "<<length<<" WordSize=" <<w<<endl;
-		exit(0);
-	}
-	if(pos<0){
-		cout<<"Fatal: negative offset. "<<pos<<endl;
-		exit(0);
-	}
-	if(strand=='F'){
-		char sequence[MAXKMERLENGTH];
-		memcpy(sequence,m_sequence+pos,w);
-		sequence[w]='\0';
-		Kmer v(sequence);
-		return v;
-	}else if(strand=='R'){
-		char sequence[MAXKMERLENGTH];
-		memcpy(sequence,m_sequence+length-pos-w,w);
-		sequence[w]='\0';
-		Kmer v(sequence);
-		return v.rComp(w);
-	}
-	Kmer error;
-	return error;
-}
-
 int roundNumber(int s,int alignment){
 	return ((s/alignment)+1)*alignment;
 }
