@@ -78,8 +78,13 @@ Kmer::Kmer(string inSequence, int pos, int wordSize, char strand){
 		validSequence = false;
 		wordSize = 0;
 	}
+	if(wordSize > KMER_MAX_PIECES){
+		cout << "Fatal: word size cannot fit in Kmer array: position= " << pos << " Length= "
+				<< inSequence.length() << " WordSize=" << wordSize << endl;
+		validSequence = false;
+		wordSize = 0;
+	}
 	#ifdef ASSERT
-	assert(wordSize<=MAXKMERLENGTH);
 	assert(validSequence);
 	#endif
 	// finished with the range checking, and variable setup. Now onto conversion
@@ -220,6 +225,10 @@ void Kmer::printPieces(){
  *
  * This function generates a vector of all Kmers generated from inserting
  * bases/colours into the start of this Kmer (pushing a base off the end).
+ *
+ * If (for whatever reason) the first base is unknown in colour-space, this will
+ * add '0' as the first colour, set the first base to unknown (rather than
+ * the given base), and invalidate the Kmer checksum.
  */
 vector<Kmer> Kmer::getIngoingEdges(uint8_t edges,int wordSize){
 	vector<Kmer> inEdges;
@@ -228,6 +237,7 @@ vector<Kmer> Kmer::getIngoingEdges(uint8_t edges,int wordSize){
 	int tempCheckSum = 0;
 	bool isCS = isColorSpace();
 	bool fbKnown = firstBaseKnown();
+	int firstBase = getPiece(1);
 	int startPiece = isCS?2:1;
 	for(int i = startPiece; i < (wordSize); i++){
 		// shift sequence 'up' one base/colour
@@ -237,21 +247,27 @@ vector<Kmer> Kmer::getIngoingEdges(uint8_t edges,int wordSize){
 	}
 	for(int code = 0; code < 4; code++, edges >>= 1){
 		if((edges & 1) == 1){
+			// cout << "adding incoming edge " << CSC::bsIntToBS(code)
+			// 	<< " to " << this->toString(wordSize, true)
+			// 	<< " (" << this->toBSString(wordSize) << ") -> ";
 			// copy from the template
 			Kmer kmerIn(kmerTemplate);
-			// add the new edge to the start of the Kmer
-			kmerIn.setPiece(startPiece,code);
-			// place first base / checksum (for colour-space Kmers)
+			if(fbKnown){
+				// add the new edge to the start of the Kmer
+				kmerIn.setPiece(1,code);
+				// recalculate the first colour-space code
+			}
 			if(isCS){
-				if(!fbKnown){
-					// first base unknown, so generate checksum
-					kmerIn.setPiece(1,(4 - ((tempCheckSum + code) % 4)) % 4);
+				int newCode = CSC::mapBStoCS(firstBase, code);
+				if(newCode <= 3){
+					kmerIn.setPiece(2,newCode);
 				} else {
-					// convert backwards to get new first base
-					// 0A -> A0, 1A -> C1, 2A -> G2, 3A -> T3, etc.
-					kmerIn.setPiece(1, CSC::revMapCStoBS(code,getPiece(1)));
+					kmerIn.setPiece(2,0);
+					fbKnown = false;
+					kmerIn.setPiece(2,tempCheckSum + 1); // sabotage checksum
 				}
 			}
+			// cout << kmerIn.toString(wordSize, true) << endl;
 			// finally, send to vector
 			inEdges.push_back(kmerIn);
 		}
@@ -273,11 +289,13 @@ vector<Kmer> Kmer::getIngoingEdges(uint8_t edges,int wordSize){
  *   * outgoing edges are stored in upper 4 bits (so >> 4 prior to adding edges)
  *   * replacement piece is set is at wordSize, rather than sequence start
  *   * first base is recalculated by stepping one base forward
+ *   * last base is necessary in order to calculate next colour (for colour-space)
  */
 vector<Kmer> Kmer::getOutgoingEdges(uint8_t edges,int wordSize){
 	vector<Kmer> outEdges;
 	Kmer kmerTemplate;
 	kmerTemplate.setPiece(0,getPiece(0)); // this copies the flags across
+	int lastBaseCode = this->getLastCode(wordSize, false);
 	int tempCheckSum = 0;
 	bool isCS = isColorSpace();
 	bool fbKnown = firstBaseKnown();
@@ -291,22 +309,36 @@ vector<Kmer> Kmer::getOutgoingEdges(uint8_t edges,int wordSize){
 	// outgoing edges are stored in the high bits, so shift down 4
 	edges >>= 4;
 	for(int code = 0; code < 4; code++, edges >>= 1){
+		int newCheckSum = tempCheckSum;
 		if((edges & 1) == 1){
+			// cout << "adding outgoing edge " << CSC::bsIntToBS(code)
+			// 	<< " to " << this->toString(wordSize, true)
+			// 	<< " (" << this->toBSString(wordSize) << ") -> ";
 			// copy from the template
 			Kmer kmerOut(kmerTemplate);
-			// add the new edge to the start of the Kmer
-			kmerOut.setPiece(wordSize,code);
+			// add the new edge to the end of the Kmer
+			int newCode = code;
+			if(isCS){
+				newCode = CSC::mapBStoCS(lastBaseCode,code);
+				if(newCode > 3){
+					newCode = 0;
+					fbKnown = false;
+					newCheckSum++; // sabotage the checksum
+				}
+			}
+			kmerOut.setPiece(wordSize,newCode);
 			// place first base / checksum (for colour-space Kmers)
 			if(isCS){
 				if(!fbKnown){
 					// first base unknown, so generate checksum
-					kmerOut.setPiece(1,(4 - ((tempCheckSum + code) % 4)) % 4);
+					kmerOut.setPiece(1,(4 - ((newCheckSum + newCode) % 4)) % 4);
 				} else {
 					// recalculate first base by stepping forward 1
 					// A0X -> [0]|AX, A1X -> [1]|CX, etc.
-					kmerOut.setPiece(1, CSC::mapCStoBS(code,getPiece(1)));
+					kmerOut.setPiece(1, CSC::mapCStoBS(getPiece(1),getPiece(2)));
 				}
 			}
+			// cout << kmerOut.toString(wordSize, true) << endl;
 			// finally, send to vector
 			outEdges.push_back(kmerOut);
 		}
@@ -315,29 +347,31 @@ vector<Kmer> Kmer::getOutgoingEdges(uint8_t edges,int wordSize){
 }
 
 
-int Kmer::getFirstCode(bool asColorSpace){
+int Kmer::getFirstCode(bool asColorSpace) {
 	#ifdef ASSERT
 	assert(checkSum());
 	#endif
-	bool isColorSpace = ((getPiece(0) & KMER_COLORSPACE) != 0);
+	bool isCS = isColorSpace();
+	int firstCode = 4;
 	if(asColorSpace){
-			if(isColorSpace){
+			if(isCS){
 				// piece 0 flags, piece 1 firstBase...
 				// colour-space sequence begins from piece 2
-				return(getPiece(2)); 
+				firstCode = getPiece(2);
 			} else {
-				return(CSC::mapBStoCS(getPiece(1),getPiece(2)));
+				firstCode = CSC::mapBStoCS(getPiece(1),getPiece(2));
 			}
 	} else {
 		bool firstBaseKnown = ((getPiece(0) & KMER_FIRSTBASE_KNOWN) != 0);
 		if(firstBaseKnown){
-			return(getPiece(1));
+			firstCode = getPiece(1);
 		} else {
 			// first base unknown, so [0-3] are all equally bad
 			// and piece 1 contains the checksum
-			return(4); // well... you did ask...
+			firstCode = 4; // well... you did ask...
 		}
 	}
+	return(firstCode);
 }
 
 
@@ -357,9 +391,9 @@ int Kmer::getLastCode(int wordSize, bool asColorSpace){
 	#ifdef ASSERT
 	assert(checkSum());
 	#endif
-	bool isColorSpace = ((getPiece(0) & KMER_COLORSPACE) != 0);
-	if(asColorSpace == isColorSpace){
-		if(isColorSpace){
+	bool isCS = isColorSpace();
+	if(asColorSpace == isCS){
+		if(isCS){
 			// add 1 to skip over first base
 			return(getPiece(wordSize+1));
 		} else {
@@ -375,7 +409,7 @@ int Kmer::getLastCode(int wordSize, bool asColorSpace){
 	int lastBaseCode = getPiece(1);
 	for(int i = 1; i < (wordSize); i++){
 		int code = getPiece(i+1);
-		if(isColorSpace){
+		if(isCS){
 			lastBaseCode = CSC::mapCStoBS(lastBaseCode,code);
 		} else {
 			lastBaseCode = CSC::mapBStoCS(lastBaseCode,code);
@@ -432,9 +466,14 @@ string Kmer::toString(int wordSize, bool showFirstBase){
 }
 
 string Kmer::toBSString(int wordSize){
+	if(wordSize > KMER_MAX_PIECES){
+		cout << "Warning: wordSize (" << wordSize << ") " << "is greater than maximum allowed ("
+				<< KMER_MAX_PIECES << "). Kmer output will be trimmed to maximum allowable size" << endl;
+		wordSize = KMER_MAX_PIECES;
+	}
 	#ifdef ASSERT
 	assert(checkSum());
-	assert(wordSize <= MAXKMERLENGTH);
+	assert(wordSize <= KMER_MAX_PIECES);
 	#endif
 	string out("");
 	out.reserve(wordSize);

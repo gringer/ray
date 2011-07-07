@@ -47,8 +47,6 @@ using namespace std;
 #else
 	#define KMER_BYTES KMER_REQUIRED_BYTES
 #endif
-#define KMER_BITS (KMER_BYTES*8)
-#define KMER_MAX_PIECES (KMER_BITS/2 - 1)
 
 #define KMER_UINT64_T (KMER_BYTES/8)
 #define KMER_UINT64_T_MODULO (KMER_BYTES%8)
@@ -57,6 +55,9 @@ using namespace std;
 #else
 	#define KMER_U64_ARRAY_SIZE (KMER_UINT64_T)
 #endif
+
+#define KMER_MAX_BITS (KMER_U64_ARRAY_SIZE*64)
+#define KMER_MAX_PIECES (KMER_MAX_BITS/2 - 1)
 
 #define KMER_CS_FIRSTBASE_UNKNOWN (0b01)
 #define KMER_CS_FIRSTBASE_KNOWN   (0b11)

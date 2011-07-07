@@ -37,7 +37,8 @@ void test_addInEdge(){
 		cout<<"Actual:"<<endl;
 		cout<<inEdges.size()<<endl;
 		for(int j=0;j<(int)inEdges.size();j++){
-			cout<<inEdges[j].toString(wordSize, true)<<endl;
+			cout<<inEdges[j].toString(wordSize, true) << " ("
+					<< inEdges[j].toBSString(wordSize) << ")"<<endl;
 		}
 	}
 	assertEquals(inEdges.size(),1);
@@ -76,7 +77,8 @@ void test_addOutEdge(){
 		cout<<b<<endl;
 		cout<<"Actual:"<<endl;
 		for(int j=0;j<(int)Edges.size();j++){
-			cout<<Edges[j].toString(wordSize, true)<<endl;
+			cout<<Edges[j].toString(wordSize, true) << " ("
+					<< Edges[j].toBSString(wordSize) << ")"<<endl;
 		}
 		uint8_t edges=aVertex.getEdges(&aKmer);
 		cout<<"Edges"<<endl;
@@ -119,7 +121,8 @@ void test_addInEdge2(){
 		cout<<"Actual:"<<endl;
 		cout<<inEdges.size()<<endl;
 		for(int j=0;j<(int)inEdges.size();j++){
-			cout<<inEdges[j].toString(wordSize, true)<<endl;
+			cout<<inEdges[j].toString(wordSize, true) << " ("
+					<< inEdges[j].toBSString(wordSize) << ")"<<endl;
 		}
 	}
 	assertEquals(inEdges.size(),1);
