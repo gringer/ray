@@ -29,8 +29,7 @@
 #include <cryptography/crypto.h>
 
 /*
- * initialise Kmer to a subsequence of a given string. This should be
- * optimised to remove the '*this =', so that only one Kmer is created
+ * initialise Kmer to a subsequence of a given string.
  */
 Kmer::Kmer(string inSequence, int pos, int wordSize, char strand){
 	// Based on previous code, if a sequence can fit in the number of
