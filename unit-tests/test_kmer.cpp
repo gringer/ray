@@ -147,7 +147,7 @@ void test_out_large(){
 	assertEquals(oEdges.size(),1);
 
 	Kmer actual=oEdges[0];
-	string actualStr=actual.toString(wordSize, true);
+	string actualStr=actual.toBSString(wordSize);
 	if(actualStr!=b){
 		cout<<"MAXKMERLENGTH: "<<MAXKMERLENGTH<<endl;
 		cout<<"WordSize: "<<wordSize<<endl;
@@ -190,7 +190,7 @@ void test_Ingoing_large2(){
 	Kmer bKmer(b);
 	vector<Kmer>inEdges=bKmer.getIngoingEdges(edges,wordSize);
 	Kmer actual=inEdges[0];
-	string actualStr=actual.toString(wordSize, true);
+	string actualStr=actual.toBSString(wordSize);
 	if(actualStr!=a){
 		cout<<"MAXKMERLENGTH: "<<MAXKMERLENGTH<<endl;
 		cout<<"WordSize: "<<wordSize<<endl;
@@ -235,7 +235,7 @@ void test_Ingoing_large(){
 	
 	vector<Kmer>inEdges=bKmer.getIngoingEdges(edges,wordSize);
 	Kmer actual=inEdges[0];
-	string actualStr=actual.toString(wordSize, true);
+	string actualStr=actual.toBSString(wordSize);
 	if(actualStr!=a){
 		cout<<"MAXKMERLENGTH: "<<MAXKMERLENGTH<<endl;
 		cout<<"WordSize: "<<wordSize<<endl;
@@ -278,7 +278,7 @@ void test_out(){
 	assertEquals(oEdges.size(),1);
 
 	Kmer actual=oEdges[0];
-	string actualStr=actual.toString(wordSize, true);
+	string actualStr=actual.toBSString(wordSize);
 	if(actualStr!=b){
 		cout<<"MAXKMERLENGTH: "<<MAXKMERLENGTH<<endl;
 		cout<<"WordSize: "<<wordSize<<endl;
@@ -320,7 +320,7 @@ void test_Ingoing(){
 	
 	vector<Kmer>inEdges=bKmer.getIngoingEdges(edges,wordSize);
 	Kmer actual=inEdges[0];
-	string actualStr=actual.toString(wordSize, true);
+	string actualStr=actual.toBSString(wordSize);
 	if(actualStr!=a){
 		cout<<"MAXKMERLENGTH: "<<MAXKMERLENGTH<<endl;
 		cout<<"WordSize: "<<wordSize<<endl;
@@ -350,7 +350,7 @@ int main(int argc,char**argv){
 
 	Kmer id(seq);
 	Kmer empty;
-	string result=id.toString(wordSize, true);
+	string result=id.toBSString(wordSize);
 	assert(seq==result);
 	char last=seq.at(seq.length()-1);
 	char observed=id.getLastSymbol(wordSize, false);
@@ -376,7 +376,7 @@ int main(int argc,char**argv){
 	set<string> tmp;
 	for(int i=0;i<(int)inEdges.size();i++){
 		Kmer theKmer=inEdges[i];
-		string a=theKmer.toString(wordSize, true);
+		string a=theKmer.toBSString(wordSize);
 		Kmer id(a);
 
 		if(theKmer!=id){

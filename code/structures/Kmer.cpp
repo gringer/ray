@@ -28,87 +28,108 @@
 #include <format/ColorSpaceCodec.h>
 #include <cryptography/crypto.h>
 
-Kmer::Kmer(string sequence){
-	// Based on previous code, if a sequence can fit in the number of
-	// allocated uint64_t, then the transfer is allowed, even if the
-	// sequence is greater than MAXKMERLENGTH
-	// so, limit range checking to that done in set/get Piece
-	clear();
-	int checkSum = 0;
-	bool colorSpace = CSC::isColorSpace(sequence);
-	bool firstBaseKnown = (!colorSpace || (sequence.at(0) != 'N'));
-	for(int i = 0; i < (int)sequence.length(); i++){
-		int code = CSC::csChrToInt(sequence.at(i));
-		if(i > 0){ // only checksum the non-firstBase sequence
-			checkSum = (checkSum + code) % 4;
-		}
-		code = (code>3)?0:code;
-		setPiece(i+1, code);
-	}
-	int flags = (colorSpace?KMER_COLORSPACE:0) +
-			(firstBaseKnown?KMER_FIRSTBASE_KNOWN:0);
-	setPiece(0,flags);
-	if(!firstBaseKnown){
-		setPiece(1,(4 - checkSum) % 4); // so a 2-bit checksum == 0
-	}
-}
-
 /*
  * initialise Kmer to a subsequence of a given string. This should be
  * optimised to remove the '*this =', so that only one Kmer is created
  */
 Kmer::Kmer(string inSequence, int pos, int wordSize, char strand){
+	// Based on previous code, if a sequence can fit in the number of
+	// allocated uint64_t, then the transfer is allowed, even if the
+	// sequence is greater than MAXKMERLENGTH
+	// so, limit range checking to that done in set/get Piece
+
+	// insert unknown first base, if necessary
+	bool reverse = (strand == 'R')?true:false;
+	bool validSequence = true;
+	bool isCS = CSC::isColorSpace(inSequence);
+	// note: all sequences are stored internally as colour-space
+	// When storing colour-space, it is necessary to find the first base for the sub-sequence
+	char lastBase = (inSequence.length()>0)?inSequence.at(0):'N';
+	// an unknown first base, or no first base
+	bool firstBaseKnown = (!isCS || (CSC::bsChrToBS(lastBase) != 'N'));
+	/* if the input string (not the subsequence) starts in the middle of a
+	 * colour-space sequence (e.g. '00120231'), then it is necessary to insert a 'N' */
+	if(!firstBaseKnown && (CSC::csChrToInt(lastBase) > 3)){
+		inSequence.insert(0,1,'N');
+		lastBase = 'N';
+	}
+
+	// check and adjust ranges
+	if(!reverse && (strand != 'F')){
+		cout << "Fatal: strand direction is incorrect: strand= " << strand << endl;
+		validSequence = false;
+		pos = 0;
+		wordSize = 0; // invalid strand, don't write any more sequence
+	}
+	if(pos >= (int)inSequence.length()){
+		cout << "Fatal: offset is too large: position= " << pos << " Length= "
+				<< inSequence.length() << " WordSize=" << wordSize << endl;
+		validSequence = false;
+		pos = 0;
+		wordSize = 0;
+	}
+	if((pos + wordSize) > inSequence.length()){
+		// don't read in more than the available sequence
+		wordSize = inSequence.length() - pos;
+	}
+	if(wordSize < 0){
+		cout << "Fatal: invalid word size: position= " << pos << " Length= "
+				<< inSequence.length() << " WordSize=" << wordSize << endl;
+		validSequence = false;
+		wordSize = 0;
+	}
 	#ifdef ASSERT
 	assert(wordSize<=MAXKMERLENGTH);
+	assert(validSequence);
 	#endif
+	// finished with the range checking, and variable setup. Now onto conversion
 	clear();
-	int length = inSequence.length();
-	if(pos>(length-wordSize)){
-		cout << "Fatal: offset is too large: position= " << pos << " Length= "
-				<< length << " WordSize=" << wordSize << endl;
-		return;
-	}
-	if(pos<0){
-		cout<<"Fatal: negative offset. "<<pos<<endl;
-		return;
-	}
-	bool isCS = CSC::isColorSpace(inSequence);
-	if(!isCS){
-		if(strand == 'F'){
-			*this = Kmer(inSequence.substr(pos,wordSize));
-		} else if(strand == 'R'){
-			*this = Kmer(inSequence.substr(pos,wordSize)).rComp(wordSize);
-		}
-		return;
-	}
-	// When storing colour-space, need to find first base for the sub-sequence
-	char lastBase = inSequence.at(0);
-	// an unknown first base, or no first base
-	if(CSC::bsChrToBS(lastBase) == 'N'){
-		// the first character is not in base-space, but is it in colour-space
-		int colorSpaceStart = (CSC::csChrToInt(lastBase) <= 3)?0:1;
-		// if so, assume this sequence is in the middle of some other colour-space
-		// sequence, so the colour-space sequence starts at the beginning of the
-		// string, and the insertion of an unknown first-base is required
-		if(strand == 'F'){
-			*this = Kmer(inSequence.substr(pos+colorSpaceStart, wordSize - 1)
-					.insert(0,1,'N'));
-		} else if(strand == 'R'){
-			*this = Kmer(inSequence.substr(pos+colorSpaceStart, wordSize - 1)
-					.insert(0,1,'N')).rComp(wordSize);
-		}
-		return;
-	}
-	// first character in base space, assume remainder are in colour-space
-	// note that this also works for pos == 0
-	string priorDecode = CSC::decodeCStoBS(inSequence.substr(0,pos+1), false);
+
+	//note: inSequence will be at least 1 character long, because 'N' is inserted for an empty string
+	string priorDecode = isCS?CSC::decodeCStoBS(inSequence.substr(0,pos+1), false):inSequence.substr(pos,1);
 	lastBase = priorDecode.at(priorDecode.length()-1);
-	// add/subtract 1 to account for first base insertion
-	if(strand == 'F'){
-		*this = Kmer(inSequence.substr(pos+1,wordSize-1).insert(0,1,lastBase));
-	} else if(strand == 'R'){
-		*this = Kmer(inSequence.substr(pos+1,wordSize-1).insert(0,1,lastBase))
-				.rComp(wordSize);
+	if(CSC::bsChrToBS(lastBase) == 'N'){
+		firstBaseKnown = false;
+	}
+	if(reverse){
+		lastBase = complementNucleotide(toupper(lastBase));
+	} else if(firstBaseKnown) {
+		setPiece(1, CSC::bsChrToInt(lastBase));
+	}
+	int lastBaseCode = CSC::bsChrToInt(lastBase);
+	int checkSum = 0;
+	for(int i = 1; i < wordSize; i++){
+		int nextCode = CSC::csChrToInt(inSequence.at(pos + i));
+		if(!isCS){ // map that base to colour-space
+			nextCode = CSC::mapBStoCS(lastBaseCode,nextCode);
+		}
+		if(nextCode > 3){ // uh oh... bad read
+			cout << "Fatal: bad sequence: position= " << pos+i << endl;
+			nextCode = 0;
+			validSequence = false; // invalidate sequence
+		}
+		// get next base-space code (for reverse-complement, if necessary)
+		lastBaseCode = CSC::mapCStoBS(lastBaseCode,nextCode);
+		if(!reverse){
+			setPiece(i+1, nextCode);
+		} else {
+			setPiece((wordSize - (i - 1)), nextCode);
+		}
+		checkSum = (checkSum + nextCode) % 4;
+	}
+	if(reverse){
+		setPiece(1, lastBaseCode);
+	}
+	if(!validSequence){
+		cout << "Fatal: invalid input sequence: " << inSequence << endl;
+		firstBaseKnown = false; // make sure a checksum is used
+		checkSum++; // sabotage the checksum
+	}
+	int flags = (KMER_COLORSPACE) +
+			(firstBaseKnown?KMER_FIRSTBASE_KNOWN:0);
+	setPiece(0,flags);
+	if(!firstBaseKnown){
+		setPiece(1,(4 - checkSum) % 4); // so a 2-bit checksum == 0
 	}
 }
 
@@ -124,10 +145,10 @@ Kmer::Kmer(uint64_t* rawBits){
 		#endif
 }
 
-Kmer::Kmer(const Kmer& b, bool convertToColourSpace){
+Kmer::Kmer(const Kmer& b){
 	clear();
-	if(!convertToColourSpace || ((b.m_u64[0] & (uint64_t)KMER_COLORSPACE) != 0)){
-		// already in colour-space, (or conversion not requested)
+	if(((b.m_u64[0] & (uint64_t)KMER_COLORSPACE) != 0)){
+		// already in colour-space
 		// so do a straight copy of data
 		for(int i=0;i<getNumberOfU64();i++){
 			m_u64[i] = b.m_u64[i];
@@ -153,7 +174,7 @@ Kmer::Kmer(const Kmer& b, bool convertToColourSpace){
 Kmer::Kmer(){
 	clear();
 	// note: this Kmer has an invalid checksum, because it is not in
-	// colour space, but has an unknown first base
+	// colour space, but has an unknown first base [00 00 .. .. ..]
 }
 
 Kmer::~Kmer(){
@@ -161,7 +182,7 @@ Kmer::~Kmer(){
 
 bool Kmer::checkSum(){
 	// warn if first base is unknown and checksum is invalid
-	// [this should alert to incorrect encodings... eventually]
+	// [this should alert to failed Kmer construction]
 	if((m_u64[0] & KMER_FLAGS) == KMER_CS_FIRSTBASE_UNKNOWN){
 		int checkSum = getPiece(1);
 		for(int i=0;i<(MAXKMERLENGTH-1);i++){
@@ -454,7 +475,7 @@ Kmer Kmer::rComp(int wordSize){
 	bool colorSpace = ((flags & KMER_COLORSPACE) != 0);
 	bool firstBaseKnown = ((flags & KMER_FIRSTBASE_KNOWN) != 0);
 	if(!colorSpace){
-		Kmer tK(*this, true);
+		Kmer tK(*this); // make a new copy as Colour space
 		return(tK.rComp(wordSize));
 	}
 	Kmer tRC;
@@ -543,11 +564,11 @@ bool Kmer::firstBaseKnown() const{
 int Kmer::compare(const Kmer& b) const{
 	// normalise to make sure both Kmers are in the same space
 	if(this->isColorSpace() && !b.isColorSpace()){
-		Kmer csB(b, true);
+		Kmer csB(b);
 		return(this->compare(csB));
 	}
 	if(!this->isColorSpace() && b.isColorSpace()){
-		Kmer csA(*this, true);
+		Kmer csA(*this);
 		return(csA.compare(b));
 	}
 	// compare sequence at all known locations

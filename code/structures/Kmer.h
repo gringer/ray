@@ -47,6 +47,8 @@ using namespace std;
 #else
 	#define KMER_BYTES KMER_REQUIRED_BYTES
 #endif
+#define KMER_BITS (KMER_BYTES*8)
+#define KMER_MAX_PIECES (KMER_BITS/2 - 1)
 
 #define KMER_UINT64_T (KMER_BYTES/8)
 #define KMER_UINT64_T_MODULO (KMER_BYTES%8)
@@ -90,11 +92,11 @@ class Kmer{
 	uint64_t m_u64[KMER_U64_ARRAY_SIZE];
 	//TODO could possibly also store this as a bitset
 public:
+	//note: all constructors convert to colour-space
 	Kmer();
-	Kmer(string sequence);
-	Kmer(string inSequence, int pos, int wordSize, char strand);
+	Kmer(string inSequence, int pos = 0, int wordSize = KMER_MAX_PIECES, char strand = 'F');
 	Kmer(uint64_t* rawBits);
-	Kmer(const Kmer& b, bool convertToColourSpace);
+	Kmer(const Kmer& b);
 	~Kmer();
 	bool checkSum();
 	bool isEqual(Kmer*a);

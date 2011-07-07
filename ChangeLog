@@ -25,6 +25,7 @@ distribution. Thanks to pmiguel on SEQanswers for providing raw data points.
 * Kmer format drastically changed 
  - now stores colour-space flag together with first base
  - shifted Kmer-specific functions into Kmer Class
+ - all Kmers are now constructed as colour-space
 * Read constructor method is now a true constructor
 * Colour space loader automatically works out CSFASTQ/CSFASTA format
 * Added colour space decoder unit test
