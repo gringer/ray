@@ -60,6 +60,9 @@ KmerCandidate*KmerAcademy::find(Kmer*key){
 	return m_hashTable.find(&lowerKey);
 }
 
+/**
+ * Ray just stores one k-mer for any pair of k-mers
+ */
 KmerCandidate*KmerAcademy::insert(Kmer*key){
 	Kmer lowerKey=key->rComp(m_parameters->getWordSize());
 	if(key->isLower(&lowerKey)){

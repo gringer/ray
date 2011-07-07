@@ -9,6 +9,7 @@
 #       -
 # read the README to know more.
 
+
 export RAY_GIT_PATH=~/git-clones/ray
 
 suffix=$(date +%Y-%m-%d-%H-%M-%S)
@@ -57,6 +58,7 @@ echo "$(date) All jobs have completed."
 
 outputFile=SystemTests-$suffix
 
+# TODO: remove this part because ruby is now available on the grid
 # ruby is not available on the grid nodes
 # therefore, ValidateGenomeAssembly must be re-run.
 
@@ -73,6 +75,7 @@ do
 	TEST_NAME=$testName
 	source validate.sh > validate.out
 	cat validate.out >> ../../$outputFile.validationEntries
+	echo "" >> ../../$outputFile.validationEntries
 	echo "$(date) Job $testName has been validated."
 	cd ../..
 done
