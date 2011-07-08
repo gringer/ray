@@ -65,12 +65,23 @@ string reverseComplement(string*a){
 	return b.str();
 }
 
+bool isValidDNA(string x){
+	for(string::iterator i=x.begin();i<x.end();i++){
+		 // colour-space is valid DNA as well
+		if(CSC::csChrToInt(*i) > 3){
+			return false;
+		}
+	}
+	return true;
+}
+
 bool isValidDNA(char*x){
 	int len=strlen(x);
 	for(int i=0;i<len;i++){
 		char a=x[i];
-		if(!(a=='A'||a=='T'||a=='C'||a=='G'))
+		if(CSC::csChrToInt(a) > 3){
 			return false;
+		}
 	}
 	return true;
 }

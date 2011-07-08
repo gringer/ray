@@ -45,7 +45,7 @@ class IndexerWorker{
 	Parameters*m_parameters;
 	int m_workerId;
 	bool m_checkedCoverage;
-	char m_sequence[4096];
+	string m_sequence;
 	RingAllocator*m_outboxAllocator;
 	bool m_forwardIndexed;
 	bool m_reverseIndexed;
@@ -58,7 +58,7 @@ class IndexerWorker{
 	DynamicVector<Kmer> m_vertices;
 	DynamicVector<int> m_coverages;
 public:
-	void constructor(int sequenceId,char*sequence,Parameters*parameters,RingAllocator*outboxAllocator,
+	void constructor(int sequenceId,string sequence,Parameters*parameters,RingAllocator*outboxAllocator,
 		VirtualCommunicator*vc,uint64_t workerId,ArrayOfReads*a,MyAllocator*allocator);
 	bool isDone();
 	void work();

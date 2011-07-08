@@ -22,12 +22,12 @@
 #include <assembler/IndexerWorker.h>
 #include <string.h>
 
-void IndexerWorker::constructor(int sequenceId,char*sequence,Parameters*parameters,RingAllocator*outboxAllocator,
+void IndexerWorker::constructor(int sequenceId,string sequence,Parameters*parameters,RingAllocator*outboxAllocator,
 	VirtualCommunicator*vc,uint64_t workerId,ArrayOfReads*a,MyAllocator*allocator){
 	m_reads=a;
 	m_allocator=allocator;
 	m_sequenceId=sequenceId;
-	strcpy(m_sequence,sequence);
+	m_sequence=sequence;
 	m_parameters=parameters;
 	m_outboxAllocator=outboxAllocator;
 	m_virtualCommunicator=vc;
@@ -37,7 +37,7 @@ void IndexerWorker::constructor(int sequenceId,char*sequence,Parameters*paramete
 	m_reverseIndexed=false;
 	m_position=0;
 	m_coverageRequested=false;
-	m_theLength=strlen(sequence);
+	m_theLength=sequence.length();
 	m_vertexIsDone=false;
 	m_vertexInitiated=false;
 	m_fetchedCoverageValues=false;

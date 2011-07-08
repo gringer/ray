@@ -37,6 +37,9 @@ see <http://www.gnu.org/licenses/>
 #endif
 using namespace std;
 
+
+typedef ColorSpaceCodec CSC; // makes calling static functions a bit less painful
+
 /*
  *  complement the sequence of a biological thing
  */
@@ -58,9 +61,11 @@ char codeToChar(uint8_t a,bool color);
 uint8_t charToCode(char a);
 
 /*
- * verify that x has only A,T,C, and G
+ * verify that x has only A,T,C, and G 
+ * (or 0,2,3, and 3 for colour-space)
  */
 bool isValidDNA(char*x);
+bool isValidDNA(string x);
 
 /*
  * add line breaks to a string

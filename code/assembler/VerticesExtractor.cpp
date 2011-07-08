@@ -92,11 +92,12 @@ void VerticesExtractor::process(int*m_mode_send_vertices_sequence_id,
 		}
 	}else{
 		if(m_mode_send_vertices_sequence_id_position==0){
-			(*m_myReads)[(*m_mode_send_vertices_sequence_id)]->getSeq(m_readSequence,m_parameters->getColorSpaceMode(),false);
+			//TODO: get this to work with colour-space output
+			m_readSequence = (*m_myReads)[(*m_mode_send_vertices_sequence_id)]->getSeq(m_parameters->getColorSpaceMode(),false);
 		
 			//cout<<"DEBUG Read="<<*m_mode_send_vertices_sequence_id<<" color="<<m_parameters->getColorSpaceMode()<<" Seq= "<<m_readSequence<<endl;
 		}
-		int len=strlen(m_readSequence);
+		int len=m_readSequence.length();
 
 		if(len<wordSize){
 			m_hasPreviousVertex=false;
@@ -105,7 +106,6 @@ void VerticesExtractor::process(int*m_mode_send_vertices_sequence_id,
 			return;
 		}
 
-		char memory[1000];
 		int lll=len-wordSize+1;
 		
 		#ifdef ASSERT
@@ -113,8 +113,7 @@ void VerticesExtractor::process(int*m_mode_send_vertices_sequence_id,
 		#endif
 
 		int p=(m_mode_send_vertices_sequence_id_position);
-		memcpy(memory,m_readSequence+p,wordSize);
-		memory[wordSize]='\0';
+		string memory = m_readSequence.substr(p,wordSize);
 		if(isValidDNA(memory)){
 			Kmer a(memory);
 

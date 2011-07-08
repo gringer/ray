@@ -168,21 +168,20 @@ bool SequencesLoader::computePartition(int rank,int size,
 		fflush(stdout);
 		// write Reads in AMOS format.
 		if(rank==MASTER_RANK&&m_parameters->useAmos()){
-			char qlt[20000];
 			for(uint64_t i=0;i<m_loader.size();i++){
 				uint64_t iid=m_distribution_currentSequenceId;
 				m_distribution_currentSequenceId++;
-				char seq[4000];
-				m_loader.at(i)->getSeq(seq,m_parameters->getColorSpaceMode(),true);
+				//TODO: get this to work with output in colour-space (can AMOS handle it?)
+				string seq = m_loader.at(i)->getSeq(m_parameters->getColorSpaceMode(),true);
 				#ifdef ASSERT
 				assert(seq!=NULL);
 				#endif
-				strcpy(qlt,seq);
+				string qlt(seq);
 				// spec: https://sourceforge.net/apps/mediawiki/amos/index.php?title=Message_Types#Sequence_t_:_Universal_t
-				for(int j=0;j<(int)strlen(qlt);j++){
-					qlt[j]='D';
+				for(int j=0;j<(int)qlt.length();j++){
+					qlt.at(j)='D';
 				}
-				fprintf(fp,"{RED\niid:%lu\neid:%lu\nseq:\n%s\n.\nqlt:\n%s\n.\n}\n",iid+1,iid+1,seq,qlt);
+				fprintf(fp,"{RED\niid:%lu\neid:%lu\nseq:\n%s\n.\nqlt:\n%s\n.\n}\n",iid+1,iid+1,seq.c_str(),qlt.c_str());
 			}
 			m_loader.clear();
 			m_loader.load(allFiles[(m_distribution_file_id)],false);
