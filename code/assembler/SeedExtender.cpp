@@ -855,13 +855,11 @@ BubbleData*bubbleData,int minimumCoverage,OpenAssemblerChooser*oa,int wordSize,v
 				m_sequenceIndexToCache++;
 			}else if(!m_sequenceRequested
 				&&m_cacheForRepeatedReads.find(uniqueId,false)!=NULL){
-				char buffer[4000];
 				SplayNode<uint64_t,Read>*node=m_cacheForRepeatedReads.find(uniqueId,false);
 				#ifdef ASSERT
 				assert(node!=NULL);
 				#endif
-				node->getValue()->getSeq(buffer,m_parameters->getColorSpaceMode(),false);
-				m_receivedString=buffer;
+				m_receivedString=node->getValue()->getSeq(m_parameters->getColorSpaceMode(),false);
 				PairedRead*pr=node->getValue()->getPairedRead();
 
 				PairedRead dummy;
@@ -960,7 +958,7 @@ BubbleData*bubbleData,int minimumCoverage,OpenAssemblerChooser*oa,int wordSize,v
 				if(addRead){
 					m_matesToMeet.erase(uniqueId);
 					ExtensionElement*element=ed->addUsedRead(uniqueId);
-
+					//TODO: change so m_receivedString can be colour-space with starting base
 					element->setSequence(m_receivedString.c_str(),ed->getAllocator());
 					element->setStartingPosition(startPosition);
 					element->setStrand(annotation.getStrand());

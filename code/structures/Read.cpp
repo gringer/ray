@@ -77,51 +77,46 @@ Read::Read(){ // needed for repeated reads (assembler/seedExtender.cpp:1034)
 }
 
 
-Read::Read(uint8_t*seq,int length){ // for raw sequences
-	m_type=TYPE_SINGLE_END;
-	m_sequence=seq;
-	m_length=length;
-	m_colorSpace = false;
-	m_firstBase = 'N';
-}
-
-Read::Read(uint8_t*seq,int length,bool color){ // for raw sequences (colour space specified)
+Read::Read(uint8_t*seq,int length,bool color, bool firstBaseKnown){ // for raw sequences
 	m_type=TYPE_SINGLE_END;
 	m_sequence=seq;
 	m_length=length;
 	m_colorSpace = color;
-	m_firstBase = 'N';
+	m_firstBaseKnown = firstBaseKnown;
 }
 
-Read::Read(uint8_t*seq,int length,char firstBase){ // for raw sequences with first base
-	m_type=TYPE_SINGLE_END;
-	m_sequence=seq;
-	m_length=length;
-	m_colorSpace = true;
-	m_firstBase = firstBase;
-}
-
-Read::Read(const char*sequenceIn,MyAllocator*seqMyAllocator,bool trimFlag){
-	string tSeq(sequenceIn);
-	m_firstBase = CSC::bsChrToBS(tSeq.at(0));
-	if(CSC::isColorSpace(tSeq)){
-		m_colorSpace = true;
-		// assume first character of sequence is first base, ensure this is [ACGTN]
-		tSeq = tSeq.substr(1,tSeq.length()-1); // trim off first base
-	} else {
-		m_colorSpace = false;
+Read::Read(string sequenceIn,MyAllocator*seqMyAllocator,bool trimFlag){
+	char firstBase = CSC::bsChrToBS(sequenceIn.at(0));
+	bool inColorSpace = CSC::isColorSpace(sequenceIn);
+	if(inColorSpace){
+		if(CSC::csChrToInt(firstBase) != CSC::bsChrToInt(firstBase)){
+			// first character is a colour-space code, so insert unknown first base
+			sequenceIn.insert(0,1,'N');
+			firstBase = 'N';
+		}
 	}
+	// all sequences are stored internally as colorSpace
+	m_firstBaseKnown = (firstBase != 'N');
+	m_colorSpace = true;
 	m_forwardOffset=0;
 	m_reverseOffset=0;
 	m_type=TYPE_SINGLE_END;
 	// clean sequence (convert to [ACGTN]+)
-	tSeq = clean(tSeq);
+	sequenceIn = clean(sequenceIn);
 	// trim sequence (remove initial / trailing 'N's)
 	if(trimFlag){
-		tSeq = trim(tSeq);
+		sequenceIn = trim(sequenceIn);
+		if(!inColorSpace && sequenceIn.length()>0){
+			firstBase = sequenceIn.at(0);
+			m_firstBaseKnown = true;
+		} else if(!m_firstBaseKnown){
+			sequenceIn.insert(0,1,'A'); // insert dummy first base because it was trimmed off
+		}
 	}
-	int length=tSeq.length();
-	m_length=length;
+	m_length=sequenceIn.length();
+	if(!inColorSpace){
+		sequenceIn = CSC::encodeBStoCS(sequenceIn);
+	}
 
 	int requiredBytes=getRequiredBytes();
 
@@ -129,15 +124,9 @@ Read::Read(const char*sequenceIn,MyAllocator*seqMyAllocator,bool trimFlag){
 	for(int i=0;i<requiredBytes;i++){
 		workingBuffer[i]=0;
 	}
-
-	for(int position=0;position<length;position++){
-		char nucleotide=tSeq.at(position);
-		uint8_t code;
-		if(m_colorSpace){
-			code=CSC::csChrToInt(nucleotide);
-		} else {
-			code=CSC::bsChrToInt(nucleotide);
-		}
+	for(int position=0;position<m_length;position++){
+		char nucleotide=sequenceIn.at(position);
+		uint8_t code=CSC::csChrToInt(nucleotide);
 		if(code > 3){
 			code=0; // TODO: note that this introduces error bias. It would be better to
 		}	        // split reads into contiguous sequences of unambiguous bases
@@ -163,17 +152,19 @@ Read::Read(const char*sequenceIn,MyAllocator*seqMyAllocator,bool trimFlag){
 
 	cout<<endl;
 	#endif
-
 	if(requiredBytes==0){
 		m_sequence=NULL;
 	}else{
-		m_sequence=(uint8_t*)seqMyAllocator->allocate(requiredBytes*sizeof(uint8_t));
+		if(seqMyAllocator == NULL){ // used to simplify unit tests
+			m_sequence = new uint8_t[requiredBytes];
+		} else {
+			m_sequence=(uint8_t*)seqMyAllocator->allocate(requiredBytes*sizeof(uint8_t));
+		}
 		memcpy(m_sequence,workingBuffer,requiredBytes);
 	}
 }
 
-void Read::getSeq(char*workingBuffer,bool color,bool doubleEncoding) const{
-	//TODO: get base-space sequence as colour-space
+string Read::getSeq(bool color,bool doubleEncoding) const{
 	if(!color && doubleEncoding){
 		cout << "warning: useless double-encoding requested for base-space output... ";
 	}
@@ -182,31 +173,19 @@ void Read::getSeq(char*workingBuffer,bool color,bool doubleEncoding) const{
 	for(int position=0;position<m_length;position++){
 		int positionInWorkingBuffer=position/4;
 		uint8_t word=m_sequence[positionInWorkingBuffer];
-		int codePositionInWord=position%4;
-		uint8_t code=(word<<(6-codePositionInWord*2));//eliminate bits before
-		code=(code>>6);
-		if(m_colorSpace){
-			out += CSC::csIntToCS(code, doubleEncoding);
+		int bitPositionInWord=(position%4) * 2;
+		uint8_t code=(word >> bitPositionInWord) & 0b11; // mask out word
+		if(position == 0){
+			out += m_firstBaseKnown?CSC::bsIntToBS(code):'N';
 		} else {
-			out += CSC::bsIntToBS(code);
+			out += CSC::csIntToCS(code, doubleEncoding);
 		}
 	}
-	if(!color & m_colorSpace) {
+	if(!color) {
 		// output in base-space is desired, but read is in colour-space
-		out.insert(0,1,m_firstBase);
 		out = CSC::decodeCStoBS(out);
-	} else {
-		// output in colour-space is desired, but read is in base-space
-		if(color & !m_colorSpace) {
-			out = CSC::encodeBStoCS(out);
-			out.erase(0,1); // remove first base to be consistent with current code
-		}
-		// TODO: append first base, once it it confirmed as 'safe' to do
-		//out.insert(0,1,m_firstBase);
 	}
-	// Assumes workingBuffer has size 4000; this is consistent with the state as at 2011-06-28
-	// 3999 allows \0 to be stored as final character
-	strncpy(workingBuffer,out.c_str(),3999); // strncpy(dest, src, n)
+	return out;
 }
 
 int Read::length()const{
@@ -219,9 +198,8 @@ int Read::length()const{
  *                     p p-1 p-2               0
  */
 Kmer Read::getVertex(int pos,int w,char strand,bool color) const {
-	char buffer[4000];
-	getSeq(buffer,color,false);
-	return Kmer(string(buffer),pos,w,strand);
+	//TODO: possibly do a copy of bytes, without the intermediate string
+	return Kmer(getSeq(color,false),pos,w,strand);
 }
 
 bool Read::hasPairedRead()const{
@@ -239,7 +217,7 @@ uint8_t*Read::getRawSequence(){
 	return m_sequence;
 }
 
-int Read::getRequiredBytes(){
+int Read::getRequiredBytes() const{
 	int requiredBits=2*m_length;
 	int modulo=requiredBits%8;
 	if(modulo!=0){
@@ -295,31 +273,31 @@ bool Read::check(){
 	Read baseSpaceRead2("ZZAC6ACGCXAAATAT55ACTCCAGCTCC..RCA..", &ma, true);
 	// note: after cleaning and trimming, reads are stored internally,
 	// replacing 'N' with 'A' or '0'.
-	char buffer[4000];
 	UnitTestHarness uth("Read");
+	string sequence;
 	uth.preProcessTest("colour-space encoding converted to double-encoded base-space");
-	colorSpaceRead1.getSeq(buffer,false,true); // this may produce a warning
-	uth.compareOutput(buffer, "TAGGGATATCTTTTTAATGCCGAAATAAGGGCTGATAACCGAGATTATTTC");
+	sequence = colorSpaceRead1.getSeq(false,true); // this may produce a warning
+	uth.compareOutput(sequence, "TAGGGATATCTTTTTAATGCCGAAATAAGGGCTGATAACCGAGATTATTTC");
 	uth.preProcessTest("colour-space encoding converted to colour-space");
-	colorSpaceRead1.getSeq(buffer,true,false);
-	uth.compareOutput(buffer, "32002333220000303130320033020032123301032223033002");
+	sequence = colorSpaceRead1.getSeq(true,false);
+	uth.compareOutput(sequence, "T32002333220000303130320033020032123301032223033002");
 	uth.preProcessTest("colour-space encoding converted to double-encoded colour-space");
-	colorSpaceRead1.getSeq(buffer,true,true);
-	uth.compareOutput(buffer, "TGAAGTTTGGAAAATATCTATGAATTAGAATGCGTTACATGGGTATTAAG");
+	sequence = colorSpaceRead1.getSeq(true,true);
+	uth.compareOutput(sequence, "TTGAAGTTTGGAAAATATCTATGAATTAGAATGCGTTACATGGGTATTAAG");
 	uth.preProcessTest("colour-space encoding with misreads converted to base-space");
-	colorSpaceRead2.getSeq(buffer,false,false);
-	uth.compareOutput(buffer, "TAGGGATATCTTTTTAATGCCGAAATAAAAATCAGCGGTTAGAGCCG");
+	sequence = colorSpaceRead2.getSeq(false,false);
+	uth.compareOutput(sequence, "TAGGGATATCTTTTTAATGCCGAAATAAAAATCAGCGGTTAGAGCCG");
 	uth.preProcessTest("colour-space encoding with misreads converted to colour-space");
-	colorSpaceRead2.getSeq(buffer,true,false);
-	uth.compareOutput(buffer, "3200233322000030313032003300003212330103222303");
+	sequence = colorSpaceRead2.getSeq(true,false);
+	uth.compareOutput(sequence, "T3200233322000030313032003300003212330103222303");
 	uth.preProcessTest("base-space encoding converted to colour-space");
-	baseSpaceRead1.getSeq(buffer,true,false);
-	uth.compareOutput(buffer, "11101133100033300132201232202002130");
+	sequence = baseSpaceRead1.getSeq(true,false);
+	uth.compareOutput(sequence, "A11101133100033300132201232202002130");
 	uth.preProcessTest("base-space encoding with misreads converted to colour-space");
-	baseSpaceRead2.getSeq(buffer,true,false);
-	uth.compareOutput(buffer, "1101331000333300122012322010011");
+	sequence = baseSpaceRead2.getSeq(true,false);
+	uth.compareOutput(sequence, "A1001330000333000122012322000001");
 	uth.preProcessTest("base-space encoding with misreads converted to base-space");
-	baseSpaceRead2.getSeq(buffer,false,false);
-	uth.compareOutput(buffer, "ACAACGCAAAATATAAACTCCAGCTCCAAACA");
+	sequence = baseSpaceRead2.getSeq(false,false);
+	uth.compareOutput(sequence, "ACCCATAAAAATATTTTGAGGTCGAGGGGGGT");
 	return uth.getSuccess();
 }

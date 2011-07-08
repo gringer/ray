@@ -46,9 +46,8 @@ void SequencesLoader::registerSequence(){
 	#endif
 
 	Read*theRead=m_loader.at(m_distribution_sequence_id);
-	char read[4000];
-	theRead->getSeq(read,m_parameters->getColorSpaceMode(),false);
-	
+	string read = theRead->getSeq(m_parameters->getColorSpaceMode(),false);
+	//TODO: use direct array copy in Read class, rather than through a string object
 	//cout<<"DEBUG2 Read="<<m_distribution_sequence_id<<" color="<<m_parameters->getColorSpaceMode()<<" Seq= "<<read<<endl;
 
 	Read myRead(read,&(*m_persistentAllocator),true);
