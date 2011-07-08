@@ -1098,7 +1098,7 @@ void MyHashTable<KEY,VALUE>::destructor(){
  */
 template<class KEY,class VALUE>
 void MyHashTable<KEY,VALUE>::printStatistics(){
-	m_allocator.print();
+	//m_allocator.print();
 }
 
 template<class KEY,class VALUE>
@@ -1128,7 +1128,6 @@ void MyHashTable<KEY,VALUE>::defragment(){
 
 template<class KEY,class VALUE>
 void MyHashTable<KEY,VALUE>::completeResizing(){
-	cout<<"Final resizing."<<endl;
 	while(m_resizing)
 		resize();
 }

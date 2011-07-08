@@ -47,8 +47,11 @@ INTEL_COMPILER = n
 # The operating system's kernel must also allow the retrieval of 8-byte chunks sitting
 # between two memory cache pages. Linux can do that, but I don't know for others.
 # if you are not sure, type uname -a to get your processor architecture.
+#
+# Seems to fail or be very slow on Intel Xeon too.
+#
 # y/n
-FORCE_PACKING = y
+FORCE_PACKING = n
 
 # compile assertions
 # Ray may be faster when ASSERT=n
@@ -165,6 +168,7 @@ obj-y += code/memory/DefragmentationGroup.o code/memory/ChunkAllocatorWithDefrag
 #communication
 obj-y += code/communication/mpi_tags.o code/communication/VirtualCommunicator.o code/communication/BufferedData.o \
 code/communication/Message.o code/communication/MessageProcessor.o code/communication/MessagesHandler.o
+obj-y += code/communication/NetworkTest.o
 
 #formats
 obj-y += code/format/ColorSpaceCodec.o code/format/ColorSpaceLoader.o code/format/FastaLoader.o \
