@@ -99,7 +99,7 @@ void SequencesIndexer::attachReads(ArrayOfReads*m_myReads,
 				assert(m_theSequenceId<(int)m_myReads->size());
 				#endif
 				//TODO: get this working with a colour-space output
-				string sequence = m_myReads->at(m_theSequenceId)->getSeq(m_parameters->getColorSpaceMode(),false);
+				string sequence = m_myReads->at(m_theSequenceId)->getSeq(false,false);
 
 				bool flag;
 				m_aliveWorkers.insert(m_theSequenceId,&m_workAllocator,&flag)->getValue()->constructor(m_theSequenceId,sequence,m_parameters,m_outboxAllocator,m_virtualCommunicator,

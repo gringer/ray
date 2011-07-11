@@ -49,8 +49,9 @@ void SequencesLoader::registerSequence(){
 	//TODO: use direct array copy in Read class, rather than through a string object
 	//cout<<"DEBUG2 Read="<<m_distribution_sequence_id<<" color="<<m_parameters->getColorSpaceMode()<<" Seq= "<<read<<endl;
 
-	Read myRead(read,&(*m_persistentAllocator),true);
-	m_myReads->push_back(&myRead);
+	// need new, otherwise myRead goes out of scope when method exits
+	Read* myRead = new Read(read,&(*m_persistentAllocator),true);
+	m_myReads->push_back(myRead);
 
 	if(m_LOADER_isLeftFile){
 		uint64_t leftSequenceGlobalId=m_distribution_currentSequenceId;

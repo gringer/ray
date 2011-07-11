@@ -119,9 +119,11 @@ string convertToString(vector<Kmer>*b,int m_wordSize,bool color){
 
 int vertexRank(Kmer*a,int _size,int w,bool color){
 	Kmer b=a->rComp(w);
-	if(a->isLower(&b))
-		b=*a;
-	return (b.getHash_1() % _size);
+	if(b.isLower(a)){
+		return(b.getHash_1() % _size);
+	} else {
+		return(a->getHash_1() % _size);
+	}
 }
 
 int roundNumber(int s,int alignment){
