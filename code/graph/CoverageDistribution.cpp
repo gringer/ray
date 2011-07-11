@@ -79,6 +79,8 @@ CoverageDistribution::CoverageDistribution(map<int,uint64_t>*distributionOfCover
 	
 	vector<int> x;
 	vector<uint64_t> y;
+	x.push_back(0);
+	y.push_back(0);
 	for(map<int,uint64_t>::iterator i=distributionOfCoverage->begin();i!=distributionOfCoverage->end();i++){
 		x.push_back(i->first);
 		y.push_back(i->second);
