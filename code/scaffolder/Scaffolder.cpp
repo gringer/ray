@@ -1098,7 +1098,7 @@ void Scaffolder::getContigSequence(uint64_t id){
 		// TODO: the scaffolder needs to be aware  of first-base colour-space
 		/* we should receive a correct number of vertices */
 		#ifdef ASSERT
-		assert(m_contigPath.size()==m_theLength);
+		assert((int)m_contigPath.size()==m_theLength);
 		#endif
 
 		m_contigSequence=convertToString(&m_contigPath,m_parameters->getWordSize(),m_parameters->getColorSpaceMode());
