@@ -105,7 +105,7 @@ void KmerAcademyBuilder::process(int*m_mode_send_vertices_sequence_id,
 		int lll=len-wordSize+1;
 		
 		#ifdef ASSERT
-		assert(m_readSequence!=NULL);
+		assert(m_readSequence.length()>0);
 		#endif
 
 		int p=(m_mode_send_vertices_sequence_id_position);

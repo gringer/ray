@@ -174,7 +174,7 @@ bool SequencesLoader::computePartition(int rank,int size,
 				//TODO: get this to work with output in colour-space (can AMOS handle it?)
 				string seq = m_loader.at(i)->getSeq(m_parameters->getColorSpaceMode(),true);
 				#ifdef ASSERT
-				assert(seq!=NULL);
+				assert(seq.length()>0);
 				#endif
 				string qlt(seq);
 				// spec: https://sourceforge.net/apps/mediawiki/amos/index.php?title=Message_Types#Sequence_t_:_Universal_t

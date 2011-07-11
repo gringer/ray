@@ -266,7 +266,7 @@ VALUE*MyHashTableGroup<KEY,VALUE>::insert(int numberOfBucketsInGroup,int bucket,
 		cout<<"Expected"<<endl;
 		key->printPieces();
 		cout<<"Actual"<<endl;
-		getBucket(bucket)->m_lowerKey.printPieces();
+		getBucket(bucket,allocator)->m_lowerKey.printPieces();
 		
 		cout<<"Bucket= "<<bucket<<" BucketsBefore= "<<bucketsBefore<<" BucketsAfter= "<<bucketsAfter<<endl;
 	}

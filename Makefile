@@ -56,7 +56,7 @@ FORCE_PACKING = n
 # compile assertions
 # Ray may be faster when ASSERT=n
 # y/n
-ASSERT = n
+ASSERT = y
 
 # Create VirtualNextGenSequencer
 # needs boost library
@@ -82,8 +82,8 @@ endif
 OPTIMIZE = y
 
 # profiling
-GPROF = n
-DEBUG = n
+GPROF = y
+DEBUG = y
 
 ifeq ($(GPROF),y)
 	OPTIMIZE = n
