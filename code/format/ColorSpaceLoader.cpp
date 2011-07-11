@@ -98,7 +98,7 @@ void ColorSpaceLoader::load(int maxToLoad,ArrayOfReads*reads,MyAllocator*seqMyAl
 			if(bufferForLine.at(0) == '>'){
 				if(id.compare("") != 0){
 					// a previous sequence has been read in
-					Read t(sequence.c_str(),seqMyAllocator,true);
+					Read t(sequence,seqMyAllocator,true);
 					reads->push_back(&t);
 					loadedSequences++;
 					m_loaded++;
@@ -111,7 +111,7 @@ void ColorSpaceLoader::load(int maxToLoad,ArrayOfReads*reads,MyAllocator*seqMyAl
 		} else if(m_ft == CSFASTQ){
 			if(lineMod4 == 2){
 				string decodedLine = m_decoder.decodeCStoBS(bufferForLine);
-				Read t(decodedLine.c_str(),seqMyAllocator,true);
+				Read t(decodedLine,seqMyAllocator,true);
 				reads->push_back(&t);
 				loadedSequences++;
 				m_loaded++;
@@ -124,7 +124,7 @@ void ColorSpaceLoader::load(int maxToLoad,ArrayOfReads*reads,MyAllocator*seqMyAl
 	}
 	if((id.compare("") != 0) && (sequence.compare("") != 0)){
 		// sequence still exists in sequence buffer, so store in reads
-		Read t(sequence.c_str(),seqMyAllocator,true);
+		Read t(sequence,seqMyAllocator,true);
 		reads->push_back(&t);
 		loadedSequences++;
 		m_loaded++;

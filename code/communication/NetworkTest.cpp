@@ -117,7 +117,8 @@ void NetworkTest::slaveWork(){
 		uint64_t*message=(uint64_t*)m_outboxAllocator->allocate(MAXIMUM_MESSAGE_SIZE_IN_BYTES);
 		message[0]=averageLatencyInMicroSeconds;
 		char*destination=(char*)(message+1);
-		strcpy(destination,m_name->c_str());
+		strncpy(destination,m_name->c_str(),MAXIMUM_MESSAGE_SIZE_IN_BYTES-2);
+		destination[MAXIMUM_MESSAGE_SIZE_IN_BYTES-2] = '\0';
 		Message aMessage(message,MAXIMUM_MESSAGE_SIZE_IN_BYTES/sizeof(uint64_t),MASTER_RANK,RAY_MPI_TAG_TEST_NETWORK_REPLY,m_rank);
 		m_outbox->push_back(aMessage);
 		(*m_slaveMode)=RAY_SLAVE_MODE_DO_NOTHING;
