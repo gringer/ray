@@ -65,7 +65,6 @@ public:
 	// raw sequence
 	Read(uint8_t*seq,int length,bool color = false, bool firstBaseKnown = true);
 	Read(string sequenceIn,MyAllocator*seqMyAllocator,bool trim);
-	//TODO: where is the destructor that de-allocates m_sequence?
 	string getSeq(bool color,bool doubleEncoding)const;
 	int length()const;
 	Kmer getVertex(int pos,int w,char strand,bool color)const;

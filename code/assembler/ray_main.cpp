@@ -25,8 +25,8 @@
 using namespace std;
 
 int main(int argc,char**argv){
-	Machine*m=new Machine(argc,argv);
-	m->start();
+	Machine m(argc,argv);
+	m.start();
 	return EXIT_SUCCESS;
 }
 

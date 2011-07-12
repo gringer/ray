@@ -222,8 +222,7 @@ string ColorSpaceCodec::decodeCStoBS(string csInput, bool reverseComplement){
 	if(csInput.length() == 0){
 		return "";
 	}
-	string output("");
-	output.reserve(csInput.length());
+	string output;
 	// transfer first base directly to output
 	if(reverseComplement){
 		output += complementNucleotide(toupper(csInput.at(0)));
@@ -269,8 +268,7 @@ string ColorSpaceCodec::encodeBStoCS(string bsInput){
 		return "";
 	}
 	// convert to A/C/G/T/N
-	string output("");
-	output.reserve(bsInput.length());
+	string output;
 	// transfer first base directly to output
 	output += bsInput.at(0);
 	for(int pos = 0; pos < (bsInput.length()-1); pos++){
