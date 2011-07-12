@@ -454,7 +454,7 @@ void MessageProcessor::call_RAY_MPI_TAG_VERTICES_DATA(Message*message){
 		if(m_subgraph->inserted()){
 			tmp->constructor(); 
 		}
-		tmp->setCoverage(&l,tmp->getCoverage(&l)+1);
+		tmp->incrementCoverage(&l);
 	}
 	Message aMessage(NULL,0,message->getSource(),RAY_MPI_TAG_VERTICES_DATA_REPLY,rank);
 	m_outbox->push_back(aMessage);

@@ -35,7 +35,7 @@ void Vertex::constructor(){
 	m_directions=NULL;
 }
 
-void Vertex::setCoverage(Kmer*a,int coverage){
+void Vertex::incrementCoverage(Kmer*a){
 	COVERAGE_TYPE max=0;
 	max=max-1;// underflow.
 	if(*a==m_lowerKey){
@@ -43,7 +43,7 @@ void Vertex::setCoverage(Kmer*a,int coverage){
 			return;
 		}
 
-		m_coverage_lower=coverage;
+		m_coverage_lower++;
 	}
 }
 
