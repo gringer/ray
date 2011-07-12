@@ -172,7 +172,7 @@ bool SequencesLoader::computePartition(int rank,int size,
 				uint64_t iid=m_distribution_currentSequenceId;
 				m_distribution_currentSequenceId++;
 				//TODO: get this to work with output in colour-space (can AMOS handle it?)
-				string seq = m_loader.at(i)->getSeq(m_parameters->getColorSpaceMode(),true);
+				string seq = m_loader.at(i)->getSeq(false,false);
 				#ifdef ASSERT
 				assert(seq.length()>0);
 				#endif

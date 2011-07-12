@@ -207,6 +207,8 @@ void SeedWorker::do_1_1_test(){
 
 			m_SEEDING_receivedOutgoingEdges=m_SEEDING_currentVertex.getOutgoingEdges(edges,m_wordSize);
 
+
+
 			m_ingoingCoverages.clear();
 			m_outgoingCoverages.clear();
 
@@ -223,7 +225,7 @@ void SeedWorker::do_1_1_test(){
 			}
 		}else if(m_ingoingEdgesReceived){
 			if(m_SEEDING_ingoingEdgeIndex<(int)m_SEEDING_receivedIngoingEdges.size()){
-				Kmer vertex=m_SEEDING_receivedIngoingEdges[m_SEEDING_ingoingEdgeIndex];
+				Kmer vertex(m_SEEDING_receivedIngoingEdges[m_SEEDING_ingoingEdgeIndex]);
 				if(m_cache.count(vertex)>0){
 					m_SEEDING_receivedVertexCoverage=m_cache[vertex];
 					m_SEEDING_ingoingEdgeIndex++;
@@ -321,7 +323,6 @@ void SeedWorker::do_1_1_test(){
 				break;
 			}
 		}
-
 		m_SEEDING_1_1_test_result=oneChild&&oneParent;
 	}
 }

@@ -181,7 +181,7 @@ void MessageProcessor::call_RAY_MPI_TAG_REQUEST_VERTEX_READS(Message*message){
 		int bufferPosition=i;
 		vertex.unpack(buffer,&bufferPosition);
 		ReadAnnotation*ptr=(ReadAnnotation*)buffer[bufferPosition++];
-		Kmer complement=m_parameters->_complementVertex(&vertex);
+		Kmer complement=vertex.rComp(m_parameters->getWordSize());
 		bool isLower=vertex<complement;
 		if(ptr==NULL){
 			ptr=m_subgraph->getReads(&vertex);
@@ -236,7 +236,7 @@ void MessageProcessor::call_RAY_MPI_TAG_VERTEX_READS(Message*message){
 	Kmer vertex;
 	int pos=0;
 	vertex.unpack(incoming,&pos);
-	Kmer complement=m_parameters->_complementVertex(&vertex);
+	Kmer complement=vertex.rComp(m_parameters->getWordSize());
 	bool lower=vertex<complement;
 	ReadAnnotation*e=(ReadAnnotation*)incoming[pos++];
 	ReadAnnotation*origin=e;
@@ -277,7 +277,7 @@ void MessageProcessor::call_RAY_MPI_TAG_VERTEX_INFO(Message*message){
 	int bufferPosition=0;
 	Kmer vertex;
 	vertex.unpack(incoming,&bufferPosition);
-	Kmer complement=m_parameters->_complementVertex(&vertex);
+	Kmer complement=vertex.rComp(m_parameters->getWordSize());
 	bool lower=vertex<complement;
 	Vertex*node=m_subgraph->find(&vertex);
 	#ifdef ASSERT
@@ -367,9 +367,9 @@ void MessageProcessor::call_RAY_MPI_TAG_VERTEX_READS_FROM_LIST_REPLY(Message*mes
 void MessageProcessor::call_RAY_MPI_TAG_VERTEX_READS_FROM_LIST(Message*message){
 	uint64_t*incoming=(uint64_t*)message->getBuffer();
 	Kmer vertex(incoming);
-	Kmer complement=m_parameters->_complementVertex(&vertex);
+	Kmer complement=vertex.rComp(m_parameters->getWordSize());
 	int numberOfMates=incoming[KMER_U64_ARRAY_SIZE+1];
-	bool lower=vertex<complement;
+	bool lower=vertex.isLower(&complement);
 	ReadAnnotation*e=(ReadAnnotation*)incoming[KMER_U64_ARRAY_SIZE+0];
 	#ifdef ASSERT
 	assert(e!=NULL);
@@ -687,10 +687,10 @@ void MessageProcessor::call_RAY_MPI_TAG_GET_COVERAGE_AND_MARK(Message*message){
 	uint64_t coverage=node->getCoverage(&vertex);
 	message2[0]=coverage;
 	message2[1]=node->getEdges(&vertex);
-	Kmer rc=m_parameters->_complementVertex(&vertex);
-	bool lower=vertex<rc;
-	uint64_t wave=incoming[1];
-	int progression=incoming[2];
+	Kmer rc=vertex.rComp(m_parameters->getWordSize());
+	bool lower=vertex.isLower(&rc);
+	uint64_t wave=incoming[bufferPosition++];
+	int progression=incoming[bufferPosition++];
 	// mark direction in the graph
 	Direction*e=(Direction*)m_directionsAllocator->allocate(sizeof(Direction));
 	e->constructor(wave,progression,lower);
@@ -1023,8 +1023,8 @@ void MessageProcessor::call_RAY_MPI_TAG_ATTACH_SEQUENCE(Message*message){
 	uint64_t*incoming=(uint64_t*)buffer;
 	for(int i=0;i<count;i+=KMER_U64_ARRAY_SIZE+4){
 		m_count++;
-		Kmer vertex(incoming + i);
-		Kmer complement=m_parameters->_complementVertex(&vertex);
+		Kmer vertex(&incoming[i]);
+		Kmer complement=vertex.rComp(m_parameters->getWordSize());
 		bool lower=vertex.isLower(&complement);
 		int rank=incoming[i+vertex.getNumberOfU64()];
 		int sequenceIdOnDestination=(int)incoming[i+vertex.getNumberOfU64()+1];
@@ -1124,7 +1124,7 @@ void MessageProcessor::call_RAY_MPI_TAG_SAVE_WAVE_PROGRESSION(Message*message){
 		Kmer vertex;
 		int pos=i;
 		vertex.unpack(incoming,&pos);
-		Kmer rc=m_parameters->_complementVertex(&vertex);
+		Kmer rc=vertex.rComp(m_parameters->getWordSize());
 		bool lower=vertex<rc;
 		#ifdef ASSERT
 		Vertex*node=m_subgraph->find(&vertex);
@@ -1332,8 +1332,8 @@ void MessageProcessor::call_RAY_MPI_TAG_ASK_VERTEX_PATHS_REPLY(Message*message){
 	int pos=0;
 	vertex.unpack(incoming,&pos);
 	int count=message->getCount();
-	Kmer complement=m_parameters->_complementVertex(&vertex);
-	bool lower=vertex<complement;
+	Kmer complement=vertex.rComp(m_parameters->getWordSize());
+	bool lower=vertex.isLower(&complement);
 	int origin=pos;
 	pos++;
 	for(int i=pos;i<count;i+=2){
@@ -1361,7 +1361,7 @@ void MessageProcessor::call_RAY_MPI_TAG_ASK_VERTEX_PATHS_REPLY_END(Message*messa
 	int bufferPosition=0;
 	vertex.unpack(incoming,&bufferPosition);
 	int count=message->getCount();
-	Kmer complement=m_parameters->_complementVertex(&vertex);
+	Kmer complement=vertex.rComp(m_parameters->getWordSize());
 	bufferPosition++;
 	bool lower=vertex<complement;
 	for(int i=bufferPosition;i<count;i+=2){
@@ -1410,8 +1410,8 @@ void MessageProcessor::call_RAY_MPI_TAG_ASK_VERTEX_PATH_REPLY(Message*message){
 	Kmer vertex;
 	int pos=0;
 	vertex.unpack(incoming,&pos);
-	Kmer complement=m_parameters->_complementVertex(&vertex);
-	bool lower=vertex<complement;
+	Kmer complement=vertex.rComp(m_parameters->getWordSize());
+	bool lower=vertex.isLower(&complement);
 	uint64_t pathId=incoming[1];
 	#ifdef ASSERT
 	assert(getRankFromPathUniqueId(pathId)<size);

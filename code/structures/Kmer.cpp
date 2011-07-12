@@ -350,16 +350,11 @@ int Kmer::getFirstCode(bool asColorSpace) {
 	#ifdef ASSERT
 	assert(checkSum());
 	#endif
-	bool isCS = isColorSpace();
 	int firstCode = 4;
 	if(asColorSpace){
-			if(isCS){
-				// piece 0 flags, piece 1 firstBase...
-				// colour-space sequence begins from piece 2
-				firstCode = getPiece(2);
-			} else {
-				firstCode = CSC::mapBStoCS(getPiece(1),getPiece(2));
-			}
+		// piece 0 flags, piece 1 firstBase...
+		// colour-space sequence begins from piece 2
+		firstCode = getPiece(2);
 	} else {
 		bool firstBaseKnown = ((getPiece(0) & KMER_FIRSTBASE_KNOWN) != 0);
 		if(firstBaseKnown){
@@ -390,29 +385,19 @@ int Kmer::getLastCode(int wordSize, bool asColorSpace){
 	#ifdef ASSERT
 	assert(checkSum());
 	#endif
-	bool isCS = isColorSpace();
-	if(asColorSpace == isCS){
-		if(isCS){
-			// add 1 to skip over first base
-			return(getPiece(wordSize+1));
+	if(asColorSpace){
+		if(!firstBaseKnown()){
+			return(4);
 		} else {
-			// sequence starts at piece 1
+			// zero-based, but add 1 to skip over flags
 			return(getPiece(wordSize));
 		}
 	}
-	bool firstBaseKnown = ((getPiece(0) & KMER_FIRSTBASE_KNOWN) != 0);
-	if(asColorSpace && !firstBaseKnown){
-		return(4);
-	}
-	// these will be somewhat expensive to calculate
+	// base-space requested... this will be somewhat expensive to calculate
 	int lastBaseCode = getPiece(1);
 	for(int i = 1; i < (wordSize); i++){
 		int code = getPiece(i+1);
-		if(isCS){
-			lastBaseCode = CSC::mapCStoBS(lastBaseCode,code);
-		} else {
-			lastBaseCode = CSC::mapBStoCS(lastBaseCode,code);
-		}
+		lastBaseCode = CSC::mapCStoBS(lastBaseCode,code);
 	}
 	return lastBaseCode;
 }
@@ -420,7 +405,7 @@ int Kmer::getLastCode(int wordSize, bool asColorSpace){
 
 char Kmer::getLastSymbol(int wordSize, bool asColorSpace){
 	if(asColorSpace){
-		if(!this->firstBaseKnown()){
+		if(!firstBaseKnown()){
 			return 'N';
 		}
 		return CSC::csIntToCS(getLastCode(wordSize,asColorSpace),false);

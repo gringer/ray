@@ -45,6 +45,7 @@ using namespace std;
  */
 class VerticesExtractor{
 	GridTable*m_subgraph;
+	//TODO: make sure storing this as a string is okay
 	string m_readSequence;
 	bool m_distributionIsCompleted;
 	Parameters*m_parameters;

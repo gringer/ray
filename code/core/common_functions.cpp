@@ -105,13 +105,14 @@ string convertToString(vector<Kmer>*b,int m_wordSize,bool color){
 	//  TTAATT
 	//  the first vertex can not fill in the first delta letter alone, it needs help.
 	for(int p=0;p<m_wordSize;p++){
-		a<<(*b)[p].getFirstSymbol(m_wordSize, (*b)[j].isColorSpace());
+		a<<(b->at(p)).getFirstSymbol(color);
 	}
 	#else
-	a<<((*b)[0]).toString(m_wordSize, false); //TODO: false for now, because there may be scaffolder problems otherwise
+	 //TODO: output in base-space for now (...,false), because there may be scaffolder problems otherwise
+	a<<((*b)[0]).toString(m_wordSize, false);
 	#endif
 	for(int j=1;j<(int)(*b).size();j++){
-		a<<(*b)[j].getLastSymbol(m_wordSize,(*b)[j].isColorSpace());
+		a<<(*b)[j].getLastSymbol(m_wordSize,false);
 	}
 	string contig=a.str();
 	return contig;

@@ -1144,10 +1144,6 @@ void Parameters::setMinimumCoverage(int a){
 		m_minimumCoverage=a;
 }
 
-Kmer Parameters::_complementVertex(Kmer*a){
-	return (a->rComp(m_wordSize));
-}
-
 bool Parameters::hasPairedReads(){
 	return m_numberOfLibraries!=0;
 }

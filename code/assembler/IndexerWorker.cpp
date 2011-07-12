@@ -27,7 +27,7 @@ void IndexerWorker::constructor(int sequenceId,const char* sequence,Parameters*p
 	m_reads=a;
 	m_allocator=allocator;
 	m_sequenceId=sequenceId;
-	strncpy(m_sequence,sequence,4095);
+	strncpy(m_sequence,sequence,4095); // get a segfault if using string here
 	m_sequence[4095] = '\0';
 	m_parameters=parameters;
 	m_outboxAllocator=outboxAllocator;
@@ -145,8 +145,7 @@ void IndexerWorker::work(){
 
 			// index it
 			if(selectedPosition!=-1){
-				Kmer tmp=m_vertices.at(selectedPosition);
-				Kmer vertex=m_parameters->_complementVertex(&tmp);
+				Kmer vertex=m_vertices.at(selectedPosition).rComp(m_parameters->getWordSize());
 				int sendTo=m_parameters->_vertexRank(&vertex);
 				uint64_t*message=(uint64_t*)m_outboxAllocator->allocate(5*sizeof(uint64_t));
 				int positionOnStrand=m_theLength-m_parameters->getWordSize()-selectedPosition;

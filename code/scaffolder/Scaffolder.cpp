@@ -1101,7 +1101,7 @@ void Scaffolder::getContigSequence(uint64_t id){
 		assert((int)m_contigPath.size()==m_theLength);
 		#endif
 
-		m_contigSequence=convertToString(&m_contigPath,m_parameters->getWordSize(),m_parameters->getColorSpaceMode());
+		m_contigSequence=convertToString(&m_contigPath,m_parameters->getWordSize(),false);
 		m_hasContigSequence=true;
 	}
 }

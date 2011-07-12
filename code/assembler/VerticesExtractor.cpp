@@ -89,8 +89,7 @@ void VerticesExtractor::process(int*m_mode_send_vertices_sequence_id,
 		}
 	}else{
 		if(m_mode_send_vertices_sequence_id_position==0){
-			//TODO: get this to work with colour-space output
-			m_readSequence = (*m_myReads)[(*m_mode_send_vertices_sequence_id)]->getSeq(m_parameters->getColorSpaceMode(),false);
+			m_readSequence = (*m_myReads)[(*m_mode_send_vertices_sequence_id)]->getSeq(true,false);
 		
 			//cout<<"DEBUG Read="<<*m_mode_send_vertices_sequence_id<<" color="<<m_parameters->getColorSpaceMode()<<" Seq= "<<m_readSequence<<endl;
 		}
@@ -110,9 +109,8 @@ void VerticesExtractor::process(int*m_mode_send_vertices_sequence_id,
 		#endif
 
 		int p=(m_mode_send_vertices_sequence_id_position);
-		string memory = m_readSequence.substr(p,wordSize);
-		if(isValidDNA(memory)){
-			Kmer a(memory);
+		Kmer a(m_readSequence,p,wordSize);
+		if(a.checkSum()){ // this makes sure the sequence is valid
 
 			int rankToFlush=0;
 

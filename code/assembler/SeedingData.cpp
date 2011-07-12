@@ -77,25 +77,24 @@ void SeedingData::computeSeeds(){
 		}
 		if(m_aliveWorkers[workerId].isDone()){
 			m_workersDone.push_back(workerId);
-			vector<Kmer> seed=*(m_aliveWorkers[workerId].getSeed());
-
-			int nucleotides=seed.size()+(m_wordSize)-1;
+			vector<Kmer> *seed=m_aliveWorkers[workerId].getSeed();
+			int nucleotides=seed->size()+(m_wordSize)-1;
 
 			// only consider the long ones.
 			if(nucleotides>=m_parameters->getMinimumContigLength()){
 				
-				Kmer firstVertex=seed[0];
-				Kmer lastVertex=seed[seed.size()-1];
-				Kmer firstReverse=m_parameters->_complementVertex(&lastVertex);
+				Kmer firstVertex=seed->at(0);
+				Kmer lastVertex=seed->at(seed->size()-1);
+				Kmer firstReverse=lastVertex.rComp(m_parameters->getWordSize());
 
 				if(firstVertex<firstReverse){
-					printf("Rank %i discovered a seed with %i vertices\n",m_rank,(int)seed.size());
+					printf("Rank %i discovered a seed with %i vertices\n",m_rank,(int)seed->size());
 					fflush(stdout);
 
 					if(m_parameters->showMemoryUsage()){
 						showMemoryUsage(m_rank);
 					}
-					m_SEEDING_seeds.push_back(seed);
+					m_SEEDING_seeds.push_back(*seed);
 				}
 			}
 		}
