@@ -173,7 +173,7 @@ void MessagesHandler::freeLeftovers(){
 	m_messageStatistics=NULL;
 }
 
-void MessagesHandler::constructor(int*argc,char***argv){
+void MessagesHandler::constructor(int*argc,char**argv[]){
 	m_sentMessages=0;
 	m_receivedMessages=0;
 	m_datatype=MPI_UNSIGNED_LONG_LONG;

@@ -44,7 +44,7 @@
 
 using namespace std;
 
-Machine::Machine(int argc,char**argv){
+Machine::Machine(int argc,char*argv[]){
 	m_messagesHandler.constructor(&argc,&argv);
 	m_rank=m_messagesHandler.getRank();
 	m_size=m_messagesHandler.getSize();
