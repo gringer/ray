@@ -30,40 +30,26 @@ using namespace std;
 
 vector<uint64_t> CoverageDistribution::smoothData(vector<uint64_t>*y){
 	vector<uint64_t> output;
-	int len=y->size();
-	
-	int window=4;
-	if((int)y->size()<=window){
-		return *y;
-	}
-	int current=0;
-	int first=0;
-	int last=current+window;
-	if(last>len-1)
-		last=len-1;
 
-	uint64_t sum=0;
-	for(int j=first;j<=last;j++)
-		sum+=y->at(j);
+	int window=2;
 
-	while(current<len){
-		int weight=last-first+1;
-		uint64_t average=(sum-y->at(current))/(weight-1);
-		output.push_back(average);
-		current++;
-		int newFirst=current-window;
-		if(newFirst<0)
-			newFirst=0;
-		if(newFirst!=first)
-			sum-=y->at(first);
-		first=newFirst;
-		int newLast=current+window;
-		if(newLast>len-1)
-			newLast=len-1;
-		if(newLast!=last)
-			sum+=y->at(newLast);
-		last=newLast;
+	for(int i=0; i < (int)y->size(); i++){
+		uint64_t sum=0;
+		int width = window;
+		// reduce width if too close to the start
+		if(i < width){
+			width = i;
+		}
+		// reduce width if too close to the end
+		if((y->size() - 1 - i) < width){
+			width = y->size() - 1 - i;
+		}
+		for(int j = i - width; j <= i + width; j++){
+			sum += y->at(j);
+		}
+		output.push_back(sum / (width + 1));
 	}
+	//note that the total area (i.e. sum) will be lower due to the width reduction
 	return output;
 }
 
@@ -79,14 +65,11 @@ CoverageDistribution::CoverageDistribution(map<int,uint64_t>*distributionOfCover
 	
 	vector<int> x;
 	vector<uint64_t> y;
-	x.push_back(0);
-	y.push_back(0);
 	for(map<int,uint64_t>::iterator i=distributionOfCoverage->begin();i!=distributionOfCoverage->end();i++){
 		x.push_back(i->first);
 		y.push_back(i->second);
 	}
 	vector<uint64_t> smoothed=smoothData(&y);
-	smoothed=smoothData(&smoothed);
 	#ifdef DEBUG_CoverageDistribution
 	for(int current=0;current<(int)x.size();current++){
 		cout<<"AVERAGE\t"<<x.at(current)<<"\t"<<y.at(current)<<"\t"<<smoothed.at(current)<<endl;
