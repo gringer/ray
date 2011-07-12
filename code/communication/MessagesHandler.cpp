@@ -178,7 +178,7 @@ void MessagesHandler::constructor(int*argc,char**argv[]){
 	m_receivedMessages=0;
 	m_datatype=MPI_UNSIGNED_LONG_LONG;
 	MPI_Init(argc,argv);
-	char serverName[1000];
+	char serverName[MPI_MAX_PROCESSOR_NAME+1];
 	int len;
 	/** initialize the message passing interface stack */
 	MPI_Get_processor_name(serverName,&len);
