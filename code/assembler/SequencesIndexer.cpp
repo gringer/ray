@@ -102,7 +102,7 @@ void SequencesIndexer::attachReads(ArrayOfReads*m_myReads,
 				string sequence = m_myReads->at(m_theSequenceId)->getSeq(false,false);
 
 				bool flag;
-				m_aliveWorkers.insert(m_theSequenceId,&m_workAllocator,&flag)->getValue()->constructor(m_theSequenceId,sequence,m_parameters,m_outboxAllocator,m_virtualCommunicator,
+				m_aliveWorkers.insert(m_theSequenceId,&m_workAllocator,&flag)->getValue()->constructor(m_theSequenceId,sequence.c_str(),m_parameters,m_outboxAllocator,m_virtualCommunicator,
 					m_theSequenceId,m_myReads,&m_workAllocator);
 				m_activeWorkers.insert(m_theSequenceId,&m_workAllocator,&flag);
 				int population=m_aliveWorkers.size();
