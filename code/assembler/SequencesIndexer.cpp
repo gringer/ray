@@ -99,6 +99,7 @@ void SequencesIndexer::attachReads(ArrayOfReads*m_myReads,
 				assert(m_theSequenceId<(int)m_myReads->size());
 				#endif
 				string sequence = m_myReads->at(m_theSequenceId)->getSeq(true,false);
+				cout << "inserting sequence (" << m_theSequenceId << "): " << sequence << endl;
 
 				bool flag;
 				m_aliveWorkers.insert(m_theSequenceId,&m_workAllocator,&flag)->getValue()->constructor(m_theSequenceId,sequence.c_str(),m_parameters,m_outboxAllocator,m_virtualCommunicator,

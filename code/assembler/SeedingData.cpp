@@ -79,6 +79,7 @@ void SeedingData::computeSeeds(){
 			m_workersDone.push_back(workerId);
 			vector<Kmer> *seed=m_aliveWorkers[workerId].getSeed();
 			int nucleotides=seed->size()+(m_wordSize)-1;
+			cout << "worker " << workerId << " done: found a seed with " << nucleotides << " nucleotides" << endl;
 
 			// only consider the long ones.
 			if(nucleotides>=m_parameters->getMinimumContigLength()){

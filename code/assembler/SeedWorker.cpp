@@ -35,85 +35,82 @@ void SeedWorker::work(){
 	if(m_finished){
 		return;
 	}
-	// check that this node has 1 ingoing edge and 1 outgoing edge.
+	if(!m_SEEDING_1_1_test_done){
+		do_1_1_test();
+		return;
+	}
 	if(!m_SEEDING_firstVertexTestDone){
-		if(!m_SEEDING_1_1_test_done){
-			do_1_1_test();
+		// check that the current vertex has 1 ingoing edge and 1 outgoing edge.
+		if(!m_SEEDING_1_1_test_result){
+			cout << "Finished (" << m_workerIdentifier << "): vertex doesn't have 1 in, 1 out: " <<
+					m_SEEDING_currentVertex.toString(m_parameters->getWordSize(),true) << endl;
+			m_finished=true;
 		}else{
-			if(!m_SEEDING_1_1_test_result){
-				m_finished=true;
-			}else{
-				m_SEEDING_firstVertexParentTestDone=false;
-				m_SEEDING_firstVertexTestDone=true;
-				m_SEEDING_currentVertex=m_SEEDING_currentParentVertex;
-				m_SEEDING_testInitiated=false;
-				m_SEEDING_1_1_test_done=false;
-			}
+			cout << "Continuing (" << m_workerIdentifier << "): vertex has 1 in, 1 out: " <<
+					m_SEEDING_currentVertex.toString(m_parameters->getWordSize(),true) << endl;
+			m_SEEDING_firstVertexParentTestDone=false;
+			m_SEEDING_firstVertexTestDone=true;
+			m_SEEDING_currentVertex=m_SEEDING_currentParentVertex;
+			m_SEEDING_testInitiated=false;
+			m_SEEDING_1_1_test_done=false;
 		}
-	// check that the parent does not have 1 ingoing edge and 1 outgoing edge
 	}else if(!m_SEEDING_firstVertexParentTestDone){
-		if(!m_SEEDING_1_1_test_done){
-			do_1_1_test();
+		// check that the parent does not have 1 ingoing edge and 1 outgoing edge
+		if(m_SEEDING_1_1_test_result){
+			cout << "Finished (" << m_workerIdentifier << "): parent has 1 in, 1 out: " <<
+					m_SEEDING_currentVertex.toString(m_parameters->getWordSize(),true) << endl;
+			m_finished=true;
 		}else{
-			if(m_SEEDING_1_1_test_result){
+			m_SEEDING_firstVertexParentTestDone=true;
+			m_SEEDING_vertices.clear();
+			m_SEEDING_seed.clear();
+			// restore original starter.
+			m_SEEDING_currentVertex=m_SEEDING_first;
+			m_SEEDING_testInitiated=false;
+			m_SEEDING_1_1_test_done=false;
+		}
+	}else{
+		// check if currentVertex has 1 ingoing edge and 1 outgoing edge, if yes, add it
+		if(m_SEEDING_vertices.count(m_SEEDING_currentVertex)>0){// avoid infinite loops.
+			m_SEEDING_1_1_test_result=false;
+		}
+		if(!m_SEEDING_1_1_test_result){
+			m_finished=true;
+
+			if((int)m_SEEDING_seed.size()>=m_parameters->getMinimumContigLength()-m_parameters->getWordSize()+1
+					&&m_parameters->debugSeeds()){
+				printf("Rank %i next vertex: Coverage= %i, ingoing coverages:",m_rank,m_cache[m_SEEDING_currentVertex]);
+				for(int i=0;i<(int)m_ingoingCoverages.size();i++){
+					printf(" %i",m_ingoingCoverages[i]);
+				}
+				printf(" outgoing coverages:");
+				for(int i=0;i<(int)m_outgoingCoverages.size();i++){
+					printf(" %i",m_outgoingCoverages[i]);
+				}
+				printf("\n");
+
+				int n=100;
+				if((int)m_coverages.size()<n){
+					n=m_coverages.size();
+				}
+				printf("Rank %i last %i coverage values in the seed:",m_rank,n);
+				for(int i=n-1;i>=0;i--){
+					printf(" %i",m_coverages[m_coverages.size()-i-1]);
+				}
+				printf("\n");
+			}
+		}else{
+			// we want some coherence...
+			if(m_SEEDING_seed.size()>0
+					&&!(m_SEEDING_seed[m_SEEDING_seed.size()-1].isEqual(&m_SEEDING_currentParentVertex))){
 				m_finished=true;
 			}else{
-				m_SEEDING_firstVertexParentTestDone=true;
-				m_SEEDING_vertices.clear();
-				m_SEEDING_seed.clear();
-				// restore original starter.
-				m_SEEDING_currentVertex=m_SEEDING_first;
+				m_SEEDING_seed.push_back(m_SEEDING_currentVertex);
+				m_coverages.push_back(m_cache[m_SEEDING_currentVertex]);
+				m_SEEDING_vertices.insert(m_SEEDING_currentVertex);
+				m_SEEDING_currentVertex=m_SEEDING_currentChildVertex;
 				m_SEEDING_testInitiated=false;
 				m_SEEDING_1_1_test_done=false;
-			}
-		}
-	// check if currentVertex has 1 ingoing edge and 1 outgoing edge, if yes, add it
-	}else{
-		// attempt to add m_SEEDING_currentVertex
-		if(!m_SEEDING_1_1_test_done){
-			do_1_1_test();
-		}else{
-			if(m_SEEDING_vertices.count(m_SEEDING_currentVertex)>0){// avoid infinite loops.
-				m_SEEDING_1_1_test_result=false;
-			}
-			if(!m_SEEDING_1_1_test_result){
-				m_finished=true;
-
-				if((int)m_SEEDING_seed.size()>=m_parameters->getMinimumContigLength()-m_parameters->getWordSize()+1
-				&&m_parameters->debugSeeds()){
-					printf("Rank %i next vertex: Coverage= %i, ingoing coverages:",m_rank,m_cache[m_SEEDING_currentVertex]);
-					for(int i=0;i<(int)m_ingoingCoverages.size();i++){
-						printf(" %i",m_ingoingCoverages[i]);
-					}
-					printf(" outgoing coverages:");
-					for(int i=0;i<(int)m_outgoingCoverages.size();i++){
-						printf(" %i",m_outgoingCoverages[i]);
-					}
-					printf("\n");
-
-					int n=100;
-					if((int)m_coverages.size()<n){
-						n=m_coverages.size();
-					}
-					printf("Rank %i last %i coverage values in the seed:",m_rank,n);
-					for(int i=n-1;i>=0;i--){
-						printf(" %i",m_coverages[m_coverages.size()-i-1]);
-					}
-					printf("\n");
-				}
-			}else{
-				// we want some coherence...
-				if(m_SEEDING_seed.size()>0
-				&&!(m_SEEDING_seed[m_SEEDING_seed.size()-1].isEqual(&m_SEEDING_currentParentVertex))){
-					m_finished=true;
-				}else{
-					m_SEEDING_seed.push_back(m_SEEDING_currentVertex);
-					m_coverages.push_back(m_cache[m_SEEDING_currentVertex]);
-					m_SEEDING_vertices.insert(m_SEEDING_currentVertex);
-					m_SEEDING_currentVertex=m_SEEDING_currentChildVertex;
-					m_SEEDING_testInitiated=false;
-					m_SEEDING_1_1_test_done=false;
-				}
 			}
 		}
 	}
@@ -169,6 +166,8 @@ void SeedWorker::do_1_1_test(){
 	if(m_SEEDING_1_1_test_done){
 		return;
 	}else if(!m_SEEDING_testInitiated){
+		cout << "Vertex 1-1 test (" << m_workerIdentifier << "): testing " <<
+				m_SEEDING_currentVertex.toString(m_parameters->getWordSize(),true) << endl;
 		m_SEEDING_testInitiated=true;
 		m_SEEDING_ingoingEdgesDone=false;
 		m_SEEDING_InedgesRequested=false;
