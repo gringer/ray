@@ -64,7 +64,7 @@ void SeedingData::computeSeeds(){
 	// restart things from scratch..
 
 	// 1. iterate on active workers
-	cout << "before checking if worker is at the end: ";
+	cout << "before checking if worker is at the end of active workers: ";
 	cout << "starting worker ID: " << *m_activeWorkerIterator << endl;
 	if(m_activeWorkerIterator!=m_activeWorkers.end()){
 		uint64_t workerId=*m_activeWorkerIterator;
