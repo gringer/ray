@@ -49,9 +49,12 @@ void SeedingData::computeSeeds(){
 		m_splayTreeIterator.hasNext();
 		#endif
 	}
-
+	cout << "before processing Inbox: ";
+	cout << "starting worker ID: " << *m_activeWorkerIterator << endl;
 	m_virtualCommunicator->processInbox(&m_activeWorkersToRestore);
 
+	cout << "before checking Virtual communicator is ready: ";
+	cout << "starting worker ID: " << *m_activeWorkerIterator << endl;
 	if(!m_virtualCommunicator->isReady()){
 		cout << "Going back home, because the virtual communicator isn't ready" << endl;
 		return;
@@ -61,6 +64,8 @@ void SeedingData::computeSeeds(){
 	// restart things from scratch..
 
 	// 1. iterate on active workers
+	cout << "before checking if worker is at the end: ";
+	cout << "starting worker ID: " << *m_activeWorkerIterator << endl;
 	if(m_activeWorkerIterator!=m_activeWorkers.end()){
 		uint64_t workerId=*m_activeWorkerIterator;
 		#ifdef ASSERT
