@@ -53,6 +53,7 @@ void SeedingData::computeSeeds(){
 	m_virtualCommunicator->processInbox(&m_activeWorkersToRestore);
 
 	if(!m_virtualCommunicator->isReady()){
+		cout << "Going back home, because the virtual communicator isn't ready" << endl;
 		return;
 	}
 
