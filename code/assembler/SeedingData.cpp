@@ -41,6 +41,7 @@ void SeedingData::computeSeeds(){
 		m_SEEDING_i=0;
 
 		m_activeWorkerIterator=m_activeWorkers.begin();
+		cout << "starting worker ID: " << *m_activeWorkerIterator << endl;
 		m_splayTreeIterator.constructor(m_subgraph,m_wordSize,m_parameters);
 		m_initiatedIterator=true;
 		m_maximumAliveWorkers=30000;
@@ -66,7 +67,7 @@ void SeedingData::computeSeeds(){
 		assert(!m_aliveWorkers[workerId].isDone());
 		#endif
 		m_virtualCommunicator->resetLocalPushedMessageStatus();
-
+		cout << "telling worker (" << workerId << ") to get to work" << endl;
 		//force the worker to work until he finishes or pushes something on the stack
 		while(!m_aliveWorkers[workerId].isDone()&&!m_virtualCommunicator->getLocalPushedMessageStatus()){
 			m_aliveWorkers[workerId].work();
