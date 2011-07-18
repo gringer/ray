@@ -41,7 +41,6 @@ void SeedingData::computeSeeds(){
 		m_SEEDING_i=0;
 
 		m_activeWorkerIterator=m_activeWorkers.begin();
-		cout << "starting worker ID: " << *m_activeWorkerIterator << endl;
 		m_splayTreeIterator.constructor(m_subgraph,m_wordSize,m_parameters);
 		m_initiatedIterator=true;
 		m_maximumAliveWorkers=30000;
@@ -49,14 +48,9 @@ void SeedingData::computeSeeds(){
 		m_splayTreeIterator.hasNext();
 		#endif
 	}
-	cout << "before processing Inbox: ";
-	cout << "starting worker ID: " << *m_activeWorkerIterator << endl;
 	m_virtualCommunicator->processInbox(&m_activeWorkersToRestore);
 
-	cout << "before checking Virtual communicator is ready: ";
-	cout << "starting worker ID: " << *m_activeWorkerIterator << endl;
 	if(!m_virtualCommunicator->isReady()){
-		cout << "Going back home, because the virtual communicator isn't ready" << endl;
 		return;
 	}
 
@@ -64,8 +58,6 @@ void SeedingData::computeSeeds(){
 	// restart things from scratch..
 
 	// 1. iterate on active workers
-	cout << "before checking if worker is at the end of active workers: ";
-	cout << "starting worker ID: " << *m_activeWorkerIterator << endl;
 	if(m_activeWorkerIterator!=m_activeWorkers.end()){
 		uint64_t workerId=*m_activeWorkerIterator;
 		#ifdef ASSERT
@@ -73,7 +65,6 @@ void SeedingData::computeSeeds(){
 		assert(!m_aliveWorkers[workerId].isDone());
 		#endif
 		m_virtualCommunicator->resetLocalPushedMessageStatus();
-		cout << "telling worker (" << workerId << ") to get to work" << endl;
 		//force the worker to work until he finishes or pushes something on the stack
 		while(!m_aliveWorkers[workerId].isDone()&&!m_virtualCommunicator->getLocalPushedMessageStatus()){
 			m_aliveWorkers[workerId].work();
@@ -86,7 +77,6 @@ void SeedingData::computeSeeds(){
 			m_workersDone.push_back(workerId);
 			vector<Kmer> *seed=m_aliveWorkers[workerId].getSeed();
 			int nucleotides=seed->size()+(m_wordSize)-1;
-			cout << "worker " << workerId << " done: found a seed with " << nucleotides << " nucleotides" << endl;
 
 			// only consider the long ones.
 			if(nucleotides>=m_parameters->getMinimumContigLength()){

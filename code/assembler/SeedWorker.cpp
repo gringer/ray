@@ -42,12 +42,8 @@ void SeedWorker::work(){
 	if(!m_SEEDING_firstVertexTestDone){
 		// check that the current vertex has 1 ingoing edge and 1 outgoing edge.
 		if(!m_SEEDING_1_1_test_result){
-			cout << "Finished (" << m_workerIdentifier << "): vertex doesn't have 1 in, 1 out: " <<
-					m_SEEDING_currentVertex.toString(m_parameters->getWordSize(),true) << endl;
 			m_finished=true;
 		}else{
-			cout << "Continuing (" << m_workerIdentifier << "): vertex has 1 in, 1 out: " <<
-					m_SEEDING_currentVertex.toString(m_parameters->getWordSize(),true) << endl;
 			m_SEEDING_firstVertexParentTestDone=false;
 			m_SEEDING_firstVertexTestDone=true;
 			m_SEEDING_currentVertex=m_SEEDING_currentParentVertex;
@@ -57,8 +53,6 @@ void SeedWorker::work(){
 	}else if(!m_SEEDING_firstVertexParentTestDone){
 		// check that the parent does not have 1 ingoing edge and 1 outgoing edge
 		if(m_SEEDING_1_1_test_result){
-			cout << "Finished (" << m_workerIdentifier << "): parent has 1 in, 1 out: " <<
-					m_SEEDING_currentVertex.toString(m_parameters->getWordSize(),true) << endl;
 			m_finished=true;
 		}else{
 			m_SEEDING_firstVertexParentTestDone=true;
@@ -166,8 +160,6 @@ void SeedWorker::do_1_1_test(){
 	if(m_SEEDING_1_1_test_done){
 		return;
 	}else if(!m_SEEDING_testInitiated){
-		cout << "Vertex 1-1 test (" << m_workerIdentifier << "): testing " <<
-				m_SEEDING_currentVertex.toString(m_parameters->getWordSize(),true) << endl;
 		m_SEEDING_testInitiated=true;
 		m_SEEDING_ingoingEdgesDone=false;
 		m_SEEDING_InedgesRequested=false;
