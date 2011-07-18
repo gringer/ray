@@ -14,7 +14,7 @@ not circularized DNA (shorter outer distance).
  - rename ColorSpaceDecoder -> ColorSpaceCodec
  - rename encode -> encodeBStoCS to remove method name confusion
 * Kmer format drastically changed 
- - now stores colour-space flag together with first base
+ - now stores direction flag together with first and last base
  - shifted Kmer-specific functions into Kmer Class
  - all Kmers are now constructed as colour-space
 * Read constructor method is now a true constructor
