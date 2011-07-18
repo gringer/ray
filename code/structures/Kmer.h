@@ -39,7 +39,7 @@ using namespace std;
  * Determine the number of uint64_t necessary to host 
  * k-mers of maximum length MAXKMERLENGTH
  */
-#define KMER_REQUIRED_BITS (2*MAXKMERLENGTH+2)
+#define KMER_REQUIRED_BITS (2*MAXKMERLENGTH+4)
 #define KMER_REQUIRED_BYTES (KMER_REQUIRED_BITS/8)
 #define KMER_REQUIRED_BYTES_MODULO (KMER_REQUIRED_BITS%8)
 #if KMER_REQUIRED_BYTES_MODULO
@@ -57,34 +57,44 @@ using namespace std;
 #endif
 
 #define KMER_MAX_BITS (KMER_U64_ARRAY_SIZE*64)
-#define KMER_MAX_PIECES (KMER_MAX_BITS/2 - 1)
+#define KMER_MAX_PIECES (KMER_MAX_BITS/2 - 2)
 
-#define KMER_CS_FIRSTBASE_UNKNOWN (0b01)
-#define KMER_CS_FIRSTBASE_KNOWN   (0b11)
-#define KMER_BS_FIRSTBASE_UNKNOWN (0b00)
-#define KMER_BS_FIRSTBASE_KNOWN   (0b10)
-#define KMER_COLORSPACE           (0b01)
+//#define KMER_CS_FIRSTBASE_UNKNOWN (0b01)
+//#define KMER_CS_FIRSTBASE_KNOWN   (0b11)
+//#define KMER_BS_FIRSTBASE_UNKNOWN (0b00)
+//#define KMER_BS_FIRSTBASE_KNOWN   (0b10)
+//#define KMER_COLORSPACE           (0b01)
+// piece 0 flags, piece 1 firstBase...
+// colour-space sequence begins from piece 2
+#define KMER_FIRSTBASE_LOCATION   (1)
+#define KMER_LASTBASE_LOCATION    (KMER_MAX_PIECES + 1)
+#define KMER_STARTPIECE           (2)
+#define KMER_DIRECTION            (0b0)
+#define KMER_FORWARD_DIRECTION    (0b0)
+#define KMER_REVERSE_DIRECTION    (0b1)
 #define KMER_FIRSTBASE_KNOWN      (0b10)
 #define KMER_FLAGS                (0b11)
 #define KMER_2BITMASK             (0b11)
 #define KMER_FIRSTBASE            (0b1100)
-#define KMER_CLEAR_FIRSTBASE      (~(0b1110))
+#define KMER_FIRSTBASE_UNKNOWN_F  (0b11)
+#define KMER_CLEAR_FIRSTBASE      (~(KMER_FIRSTBASE))
+#define KMER_CLEAR_LASTBASE       (~((uint64_t)0b11 << 62))
+#define KMER_LASTU64_LOCATION     (KMER_U64_ARRAY_SIZE - 1)
 
 /**
  * Class for storing k-mers.
  * For now only an array of uint64_t is present, but later,
  * when the code is stable, this could be a mix of u64, u32 and u16 and u8
- * while maintening the same interface, that are the two functions.
+ * while maintaining the same interface, that are the two functions.
  *
  * Kmer format
- * bit 0: colour-space status (1: in colour space, 0: in base space)
- * bit 1: first-base unknown (1: unknown first base, 0: known first base)
- *        Note: if in base-space, first base is *always* known
+ * bit 0: direction (0: forward, 1: reverse) -- always 0 for now
+ * bit 1: first base known (1: known first base, 0: unknown first base)
  * bit 2-3: first base (A=0b00,C=0b01,G=0b10,T=0b11)
- *        Note: if first-base is unknown, this is a checkSum modifier
- *              in this case, the 2-bit sum from bits 2-3 onwards
- *              should be 0
+ *        Note: if first-base is unknown, this should be 3 (0b11)
  * bit 4 onwards: remaining sequence, 2 bits per base/colour
+ * last 2 bits: last base (in colour-space)
+ *        Note: if first-base is unknown, this should be 3 (0b11)
  *
  */
 
@@ -110,7 +120,7 @@ public:
 	uint64_t getHash_1();
 	uint64_t getHash_2();
 	string toBSString(int wordsize);
-	string toString(int wordsize, bool showFirstBase);
+	string toString(int wordsize, bool showBases);
 	Kmer rComp(int wordSize);
 	vector<Kmer> getIngoingEdges(uint8_t edges,int wordSize);
 	vector<Kmer> getOutgoingEdges(uint8_t edges,int wordSize);

@@ -174,8 +174,8 @@ void test_out_large(){
 }
 
 void test_Ingoing_large2(){
-	string a="AGCAAGTTAGCAACATCATATGAGTGCAATCCTGTTGTAGGCTCATCTAAGACATAAATAGTT";
-	string b= "GCAAGTTAGCAACATCATATGAGTGCAATCCTGTTGTAGGCTCATCTAAGACATAAATAGTTT";
+	string a="AGCAAGTTAGCAACATCATATGAGTGCAATCCTGTTGTAGGCTCATCTAAGACATAAATAGT";
+	string b= "GCAAGTTAGCAACATCATATGAGTGCAATCCTGTTGTAGGCTCATCTAAGACATAAATAGTT";
 	int wordSize=a.length();
 
 	// description of m_edges:
@@ -364,7 +364,6 @@ int main(int argc,char**argv){
 	string rc=reverseComplement(&seq);
 
 	Kmer comp=id.rComp(wordSize);
-
 	string result2=comp.toBSString(wordSize);
 	assertEquals(rc,result2);
 

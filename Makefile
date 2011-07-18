@@ -16,7 +16,7 @@ PREFIX=install-prefix
 # 96 nucleotides are stored on 3x64 bits
 # Intermediate values should utilise intermediate numbers of bits.
 # There is no maximum value for MAXKMERLENGTH
-MAXKMERLENGTH = 31
+MAXKMERLENGTH = 30
 
 # support for .gz files
 # needs libz
