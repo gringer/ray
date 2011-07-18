@@ -125,7 +125,7 @@ void SeedingData::computeSeeds(){
 				Kmer vertexKey=*(m_splayTreeIterator.getKey());
 
 				int coverage=node->getCoverage(&vertexKey);
-				int minimum=5;
+				int minimum=1;
 				if(coverage<minimum){
 					m_completedJobs++;
 				}else{
