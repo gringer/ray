@@ -34,6 +34,7 @@
 #include <cryptography/crypto.h>
 using namespace std;
 
+/** extend the seeds */
 void SeedExtender::extendSeeds(vector<vector<Kmer> >*seeds,ExtensionData*ed,int theRank,StaticVector*outbox,
   Kmer*currentVertex,FusionData*fusionData,RingAllocator*outboxAllocator,bool*edgesRequested,int*outgoingEdgeIndex,
 int*last_value,bool*vertexCoverageRequested,int wordSize,int size,bool*vertexCoverageReceived,
@@ -328,12 +329,12 @@ int*receivedVertexCoverage,bool*edgesReceived,vector<Kmer>*receivedOutgoingEdges
 				int startPosition=element->getPosition();
 				int distance=ed->m_EXTENSION_extension->size()-startPosition+element->getStrandPosition();
 
-				int repeatValueForRightRead=ed->m_repeatedValues->at(startPosition);
+				//int repeatValueForRightRead=ed->m_repeatedValues->at(startPosition);
 				#ifdef ASSERT
 				assert(startPosition<(int)ed->m_extensionCoverageValues->size());
 				#endif
 
-				int repeatThreshold=100;
+				//int repeatThreshold=100;
 
 				char*theSequence=element->getSequence();
 				#ifdef ASSERT
@@ -361,7 +362,10 @@ int*receivedVertexCoverage,bool*edgesReceived,vector<Kmer>*receivedOutgoingEdges
 				// got a match!
 
 				if(!element->hasPairedRead()){
-					if(repeatValueForRightRead<repeatThreshold){
+					/* we only use single-end reads on
+					non-repeated vertices */
+					//if(repeatValueForRightRead<repeatThreshold){
+					if(ed->m_currentCoverage<m_parameters->getRepeatCoverage()){
 						ed->m_EXTENSION_readPositionsForVertices[ed->m_EXTENSION_receivedReadVertex].push_back(distance);	
 					}
 					ed->m_EXTENSION_readIterator++;
@@ -375,33 +379,48 @@ int*receivedVertexCoverage,bool*edgesReceived,vector<Kmer>*receivedOutgoingEdges
 					}
 */
 					int library=pairedRead->getLibrary();
-					int expectedFragmentLength=m_parameters->getLibraryAverageLength(library);
-					int expectedDeviation=m_parameters->getLibraryStandardDeviation(library);
 					ExtensionElement*extensionElement=ed->getUsedRead(uniqueReadIdentifier);
 					if(extensionElement!=NULL){// use to be via readsPositions
 						char theLeftStrand=extensionElement->getStrand();
 						int startingPositionOnPath=extensionElement->getPosition();
 
-						int repeatLengthForLeftRead=ed->m_repeatedValues->at(startingPositionOnPath);
+						//int repeatLengthForLeftRead=ed->m_repeatedValues->at(startingPositionOnPath);
 						int observedFragmentLength=(startPosition-startingPositionOnPath)+ed->m_EXTENSION_receivedLength+extensionElement->getStrandPosition()-element->getStrandPosition();
 						int multiplier=3;
 
-						if(expectedFragmentLength-multiplier*expectedDeviation<=observedFragmentLength 
-						&& observedFragmentLength <= expectedFragmentLength+multiplier*expectedDeviation 
-				&&( (theLeftStrand=='F' && theRightStrand=='R')
-					||(theLeftStrand=='R' && theRightStrand=='F'))
-				// the bridging pair is meaningless if both start in repeats
-				&&repeatLengthForLeftRead<repeatThreshold){
-						// it matches!
-							ed->m_EXTENSION_pairedReadPositionsForVertices[ed->m_EXTENSION_receivedReadVertex].push_back(observedFragmentLength);
-							ed->m_EXTENSION_pairedLibrariesForVertices[ed->m_EXTENSION_receivedReadVertex].push_back(library);
-							ed->m_EXTENSION_pairedReadsForVertices[ed->m_EXTENSION_receivedReadVertex].push_back(uniqueId);
-							m_hasPairedSequences=true;
+						/* iterate over all peaks */
+						for(int peak=0;peak<m_parameters->getLibraryPeaks(library);peak++){
+							int expectedFragmentLength=m_parameters->getLibraryAverageLength(library,peak);
+							int expectedDeviation=m_parameters->getLibraryStandardDeviation(library,peak);
+
+							if(expectedFragmentLength-multiplier*expectedDeviation<=observedFragmentLength 
+							&& observedFragmentLength <= expectedFragmentLength+multiplier*expectedDeviation 
+					&&( (theLeftStrand=='F' && theRightStrand=='R')
+						||(theLeftStrand=='R' && theRightStrand=='F'))
+					// the bridging pair is meaningless if both start in repeats
+					//&&repeatLengthForLeftRead<repeatThreshold){
+					/* left read is safe so we don't care if right read is on a
+					repeated region really. */){
+							// it matches!
+
+								m_pairedScores[library][peak]++;
+
+								ed->m_EXTENSION_pairedReadPositionsForVertices[ed->m_EXTENSION_receivedReadVertex].push_back(observedFragmentLength);
+								ed->m_EXTENSION_pairedLibrariesForVertices[ed->m_EXTENSION_receivedReadVertex].push_back(library);
+								ed->m_EXTENSION_pairedReadsForVertices[ed->m_EXTENSION_receivedReadVertex].push_back(uniqueId);
+
+								m_hasPairedSequences=true;
+
+								/** only match 1 peak */
+								break;
+							}
 						}
 					}
 
 					// add it anyway as a single-end match too!
-					if(repeatValueForRightRead<repeatThreshold){
+					/* add it as single-end read if not repeated. */
+					//if(repeatValueForRightRead<repeatThreshold){
+					if(ed->m_currentCoverage<m_parameters->getRepeatCoverage()){
 						ed->m_EXTENSION_readPositionsForVertices[ed->m_EXTENSION_receivedReadVertex].push_back(distance);
 					}
 
@@ -668,6 +687,7 @@ map<Kmer,set<Kmer> >*arcs,map<Kmer,int>*coverages,int depth,set<Kmer>*visited){
 	}
 }
 
+/** store the extension and do the next one right now */
 void SeedExtender::storeExtensionAndGetNextOne(ExtensionData*ed,int theRank,vector<vector<Kmer> >*seeds,
 Kmer *currentVertex,BubbleData*bubbleData){
 	if((int)ed->m_EXTENSION_extension->size()+m_parameters->getWordSize()-1>=m_parameters->getMinimumContigLength()){
@@ -678,7 +698,7 @@ Kmer *currentVertex,BubbleData*bubbleData){
 		}
 
 		if(ed->m_enumerateChoices_outgoingEdges.size()>1 && ed->m_EXTENSION_readsInRange->size()>0
-		&&m_parameters->showEndingContext()){
+		&&m_parameters->showEndingContext() && false){ /* don't show this tree. */
 			map<Kmer,set<Kmer> >arcs;
 			for(int i=0;i<(int)bubbleData->m_BUBBLE_visitedVertices.size();i++){
 				Kmer root=*currentVertex;
@@ -703,11 +723,29 @@ Kmer *currentVertex,BubbleData*bubbleData){
 
 		printExtensionStatus(currentVertex);
 		cout<<"Rank "<<theRank<<" (extension done)"<<endl;
+	
+		/** show the utilised outer distances */
+		cout<<"Rank "<<theRank<<" utilised outer distances: "<<endl;
+		for(map<int,map<int, uint64_t> >::iterator i=m_pairedScores.begin();i!=m_pairedScores.end();i++){
+			for(map<int,uint64_t>::iterator j=i->second.begin();j!=i->second.end();j++){
+				int lib=i->first;
+				int peak=j->first;
+				int average=m_parameters->getLibraryAverageLength(lib,peak);
+				int deviation=m_parameters->getLibraryStandardDeviation(lib,peak);
+				uint64_t count=j->second;
+
+				cout<<"Rank "<<theRank<<" Library: "<<lib<<" LibraryPeak: "<<peak<<" PeakAverage: "<<average<<" PeakDeviation: "<<deviation<<" Pairs: "<<count<<endl;
+			}
+		}
+
 		ed->m_EXTENSION_contigs.push_back(*(ed->m_EXTENSION_extension));
 	
 		uint64_t id=getPathUniqueId(theRank,ed->m_EXTENSION_currentSeedIndex);
 		ed->m_EXTENSION_identifiers.push_back(id);
 	}
+
+	/** reset the observations for outer distances utilised during the extension */
+	m_pairedScores.clear();
 
 	ed->resetStructures();
 	m_matesToMeet.clear();
@@ -833,17 +871,19 @@ BubbleData*bubbleData,int minimumCoverage,OpenAssemblerChooser*oa,int wordSize,v
 		ed->m_EXTENSION_extension->push_back((*currentVertex));
 		ed->m_extensionCoverageValues->push_back(*receivedVertexCoverage);
 
+		/*
 		if(ed->m_currentCoverage<m_parameters->getRepeatCoverage()){
 			m_repeatLength=0;
 		}else{
 			m_repeatLength++;
 		}
+		*/
 
 		#ifdef ASSERT
 		assert(ed->m_currentCoverage<=m_parameters->getMaximumAllowedCoverage());
 		#endif
 
-		ed->m_repeatedValues->push_back(m_repeatLength);
+		//ed->m_repeatedValues->push_back(m_repeatLength);
 		m_sequenceRequested=false;
 	}else{
 		if(m_sequenceIndexToCache<(int)ed->m_EXTENSION_receivedReads.size()){
@@ -896,6 +936,7 @@ BubbleData*bubbleData,int minimumCoverage,OpenAssemblerChooser*oa,int wordSize,v
 				int positionOnStrand=annotation.getPositionOnStrand();
 				char theRightStrand=annotation.getStrand();
 
+				/** only one 1 k-mer is useless for the extension. */
 				int availableLength=readLength-positionOnStrand;
 				if(availableLength<=wordSize){
 					addRead=false;
@@ -904,7 +945,7 @@ BubbleData*bubbleData,int minimumCoverage,OpenAssemblerChooser*oa,int wordSize,v
 				// don't add it up if its is marked on a repeated vertex and
 				// its mate was not seen yet.
 				
-				if(ed->m_currentCoverage>=3*m_parameters->getPeakCoverage()){
+				if(addRead && ed->m_currentCoverage>=3*m_parameters->getPeakCoverage()){
 					// the vertex is repeated
 					if(ed->m_EXTENSION_pairedRead.getLibrary()!=DUMMY_LIBRARY){
 						uint64_t mateId=ed->m_EXTENSION_pairedRead.getUniqueId();
@@ -921,7 +962,7 @@ BubbleData*bubbleData,int minimumCoverage,OpenAssemblerChooser*oa,int wordSize,v
 				}
 
 				// check the distance.
-				if(ed->m_EXTENSION_pairedRead.getLibrary()!=DUMMY_LIBRARY){
+				if(addRead && ed->m_EXTENSION_pairedRead.getLibrary()!=DUMMY_LIBRARY){
 					uint64_t mateId=ed->m_EXTENSION_pairedRead.getUniqueId();
 					// the mate is required to allow proper placement
 					
@@ -931,31 +972,43 @@ BubbleData*bubbleData,int minimumCoverage,OpenAssemblerChooser*oa,int wordSize,v
 						char theLeftStrand=extensionElement->getStrand();
 						int startingPositionOnPath=extensionElement->getPosition();
 
-						int repeatLengthForLeftRead=ed->m_repeatedValues->at(startingPositionOnPath);
+						//int repeatLengthForLeftRead=ed->m_repeatedValues->at(startingPositionOnPath);
 						int observedFragmentLength=(startPosition-startingPositionOnPath)+ed->m_EXTENSION_receivedLength+extensionElement->getStrandPosition()-positionOnStrand;
 						int multiplier=3;
 
 						int library=ed->m_EXTENSION_pairedRead.getLibrary();
-						int expectedFragmentLength=m_parameters->getLibraryAverageLength(library);
-						int expectedDeviation=m_parameters->getLibraryStandardDeviation(library);
 
-						int repeatThreshold=100;
-						if(expectedFragmentLength-multiplier*expectedDeviation<=observedFragmentLength 
-						&& observedFragmentLength <= expectedFragmentLength+multiplier*expectedDeviation 
-				&&( (theLeftStrand=='F' && theRightStrand=='R')
-					||(theLeftStrand=='R' && theRightStrand=='F'))
-				// the bridging pair is meaningless if both start in repeats
-				&&repeatLengthForLeftRead<repeatThreshold){
-							
-						}else{
-							// remove the right read from the used set
-							addRead=false;
+						//int repeatThreshold=100;
+
+						/** : iterate over all peaks */
+						/** if there is a mate, choose the good peak for the library */
+						for(int peak=0;peak<m_parameters->getLibraryPeaks(library);peak++){
+							int expectedFragmentLength=m_parameters->getLibraryAverageLength(library,peak);
+							int expectedDeviation=m_parameters->getLibraryStandardDeviation(library,peak);
+
+							if(expectedFragmentLength-multiplier*expectedDeviation<=observedFragmentLength 
+							&& observedFragmentLength <= expectedFragmentLength+multiplier*expectedDeviation 
+					&&( (theLeftStrand=='F' && theRightStrand=='R')
+						||(theLeftStrand=='R' && theRightStrand=='F'))
+					// the bridging pair is meaningless if both start in repeats
+					/*&&repeatLengthForLeftRead<repeatThreshold*/
+					/* left read is safe so we don't care if right read is on a
+					repeated region really. */){
+								/* as soon as we find something interesting, we stop */
+								/* this makes Ray segfault because */
+								addRead=true;
+								break;
+							}else{
+								// remove the right read from the used set
+								addRead=false;
+							}
 						}
 					}
 				}
 
 
 				if(addRead){
+					//cout<<"Adding read "<<uniqueId<<" at "<<position<<endl;
 					m_matesToMeet.erase(uniqueId);
 					ExtensionElement*element=ed->addUsedRead(uniqueId);
 					//TODO: change so m_receivedString can be colour-space with starting base
@@ -977,6 +1030,8 @@ BubbleData*bubbleData,int minimumCoverage,OpenAssemblerChooser*oa,int wordSize,v
 						cout<<"Add SeqInfo Seq="<<m_receivedString<<" Id="<<uniqueId<<" ExpiryPosition="<<expiryPosition<<endl;
 					}
 					#endif
+
+					//cout<<"Read "<<uniqueId<<" will expire at "<<expiryPosition<<endl;
 					m_expiredReads[expiryPosition].push_back(uniqueId);
 					// received paired read too !
 					if(ed->m_EXTENSION_pairedRead.getLibrary()!=DUMMY_LIBRARY){
@@ -986,8 +1041,10 @@ BubbleData*bubbleData,int minimumCoverage,OpenAssemblerChooser*oa,int wordSize,v
 							ed->m_pairedReadsWithoutMate->insert(uniqueId);
 
 							int library=ed->m_EXTENSION_pairedRead.getLibrary();
-							int expectedFragmentLength=m_parameters->getLibraryAverageLength(library);
-							int expectedDeviation=m_parameters->getLibraryStandardDeviation(library);
+
+							/** use the maximum peak for expiry positions */
+							int expectedFragmentLength=m_parameters->getLibraryMaxAverageLength(library);
+							int expectedDeviation=m_parameters->getLibraryMaxStandardDeviation(library);
 							int expiration=startPosition+expectedFragmentLength+3*expectedDeviation;
 
 							#ifdef HUNT_INFINITE_BUG
@@ -1113,15 +1170,27 @@ void SeedExtender::removeUnfitLibraries(){
 
 		for(map<int,vector<int> >::iterator j=classifiedValues.begin();j!=classifiedValues.end();j++){
 			int library=j->first;
-			int averageLength=m_parameters->getLibraryAverageLength(j->first);
-			int stddev=m_parameters->getLibraryStandardDeviation(j->first);
+
+			/** TODO: iterate over all peaks */
+			int averageLength=m_parameters->getLibraryAverageLength(j->first,0);
+			int stddev=m_parameters->getLibraryStandardDeviation(j->first,0);
 			int sum=0;
 			int n=0;
 			for(int k=0;k<(int)j->second.size();k++){
 				int val=j->second[k];
+
+				/** if there are 2 peaks, we just accept everything */
+				if(m_parameters->getLibraryPeaks(j->first)>1)
+					acceptedValues.push_back(val);
+
 				sum+=val;
 				n++;
 			}
+
+			/** if there are 2 peaks, we just accept everything */
+			if(m_parameters->getLibraryPeaks(j->first)>1)
+				continue;
+
 			int mean=sum/n;
 			
 			int minimumNumberOfBridges=2;
@@ -1150,6 +1219,11 @@ void SeedExtender::removeUnfitLibraries(){
 				}
 			}
 		}
+/*
+		if(m_ed->m_EXTENSION_pairedReadPositionsForVertices[vertex].size()>0)
+			cout<<"Removing unfit, before "<<m_ed->m_EXTENSION_pairedReadPositionsForVertices[vertex].size()<<" after "<<acceptedValues.size()<<endl;
+*/
+
 		m_ed->m_EXTENSION_pairedReadPositionsForVertices[vertex]=acceptedValues;
 		if(!acceptedValues.empty()){
 			hasPairedSequences=true;

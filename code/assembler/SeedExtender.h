@@ -48,6 +48,8 @@ using namespace std;
  * Performs the extension of seeds.
  */
 class SeedExtender{
+	map<int,map<int,uint64_t> > m_pairedScores;
+
 	int m_extended;
 	bool m_hasPairedSequences;
 	bool m_pickedInformation;
@@ -55,7 +57,6 @@ class SeedExtender{
 	SplayTree<uint64_t,ReadAnnotation*> m_cacheForListOfReads;
 	MyAllocator m_cacheAllocator;
 
-	int m_repeatLength;
 	StaticVector*m_inbox;
 
 	DepthFirstSearchData*m_dfsData;

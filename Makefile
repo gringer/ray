@@ -93,6 +93,7 @@ endif
 ifeq ($(DEBUG),y)
 	OPTIMIZE = n
 	FORCE_PACKING = n
+	ASSERT = y 
 endif
 
 PEDANTIC = n
@@ -200,6 +201,8 @@ code/structures/StaticVector.o code/structures/Vertex.o
 #scaffolder
 obj-y += code/scaffolder/Scaffolder.o 
 
+obj-y += code/pairs/LibraryPeakFinder.o
+
 #assembler
 obj-y += code/assembler/VertexMessenger.o \
 code/assembler/ReadFetcher.o code/assembler/LibraryWorker.o code/assembler/IndexerWorker.o  \
@@ -271,8 +274,12 @@ clean:
 	@echo CLEAN
 
 manual:
-	latex2html -split 0 -html_version 4.0,latin1,unicode InstructionManual.tex
 	pdflatex InstructionManual.tex
+	pdflatex InstructionManual.tex
+	pdflatex InstructionManual.tex
+	pdflatex InstructionManual.tex
+	latex2html -split 0 -html_version 4.0,latin1,unicode InstructionManual.tex
+	latex2html -split 0 -html_version 4.0,latin1,unicode InstructionManual.tex
 
 install: 
 	@scripts/install.sh

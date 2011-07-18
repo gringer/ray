@@ -44,6 +44,7 @@ using namespace std;
  * their respective owners.
  */
 class KmerAcademyBuilder{
+	//TODO: can a string be used here?
 	string m_readSequence;
 	bool m_distributionIsCompleted;
 	Parameters*m_parameters;

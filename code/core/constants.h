@@ -22,7 +22,7 @@ see <http://www.gnu.org/licenses/>
 #ifndef _constants
 #define _constants
 
-#define RAY_VERSION "1.6.1-devel"
+#define RAY_VERSION "1.6.2-devel"
 
 /* 
  * Define the maximum k-mer length when
@@ -105,6 +105,9 @@ see <http://www.gnu.org/licenses/>
 /* the maximum of processes is utilized to construct unique hyperfusions IDs */
 #define MAX_NUMBER_OF_MPI_PROCESSES 1000000
 #define INVALID_RANK MAX_NUMBER_OF_MPI_PROCESSES
+
+/* maximum value for a uint16_t */
+#define RAY_MAXIMUM_READ_LENGTH 65535 
 
 #define MAX_VERTICES_TO_VISIT 500
 #define TIP_LIMIT 40
