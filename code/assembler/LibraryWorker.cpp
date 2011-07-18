@@ -54,7 +54,6 @@ StaticVector*inbox,StaticVector*outbox,	map<int,map<int,int> >*libraryDistances,
 }
 
 void LibraryWorker::work(){
-	cout << "=======================================================" << endl;
 	if(m_done){
 		return;
 	}

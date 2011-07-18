@@ -360,8 +360,8 @@ void Machine::start(){
 	/** configure the virtual communicator. */
 
 	#define MACRO_LIST_ITEM(x,y) \
-
-	/* ## concatenates 2 symbols */
+		\
+	/* ## concatenates 2 symbols */ \
 	m_virtualCommunicator.setReplyType( x, x ## _REPLY ); \
 	m_virtualCommunicator.setElementsPerQuery( x, y );
 
