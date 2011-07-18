@@ -666,7 +666,7 @@ map<Kmer,set<Kmer> >*arcs,map<Kmer,int>*coverages,int depth,set<Kmer>*visited){
 		for(int j=0;j<depth;j++)
 			printf(" ");
 		Kmer child=*i;
-		string s=child.toString(m_parameters->getWordSize(), false);
+		string s=child.toBSString(m_parameters->getWordSize());
 		#ifdef ASSERT
 		assert(coverages->count(*i)>0);
 		#endif
@@ -712,7 +712,7 @@ Kmer *currentVertex,BubbleData*bubbleData){
 			}
 			printf("\n");
 			printf("Tree\n");
-			string s=currentVertex->toString(m_parameters->getWordSize(), true);
+			string s=currentVertex->toBSString(m_parameters->getWordSize());
 			printf("%s %i\n",s.c_str(),ed->m_currentCoverage);
 			set<Kmer> visited;
 			printTree(*currentVertex,&arcs,
@@ -1121,7 +1121,7 @@ void SeedExtender::inspect(ExtensionData*ed,Kmer*currentVertex){
 
 	cout<<endl;
 	for(int i=0;i<(int)ed->m_enumerateChoices_outgoingEdges.size();i++){
-		string vertex=(ed->m_enumerateChoices_outgoingEdges[i]).toString(wordSize, true);
+		string vertex=(ed->m_enumerateChoices_outgoingEdges[i]).toBSString(wordSize);
 		Kmer key=ed->m_enumerateChoices_outgoingEdges[i];
 		cout<<endl;
 		cout<<"Choice #"<<i+1<<endl;

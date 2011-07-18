@@ -108,8 +108,8 @@ string convertToString(vector<Kmer>*b,int m_wordSize,bool color){
 		a<<(b->at(p)).getFirstSymbol(color);
 	}
 	#else
-	 //TODO: output in base-space for now (...,false), because there may be scaffolder problems otherwise
-	a<<((*b)[0]).toString(m_wordSize, false);
+	 //TODO: output in base-space for now, because there may be scaffolder problems otherwise
+	a<<((*b)[0]).toBSString(m_wordSize);
 	#endif
 	for(int j=1;j<(int)(*b).size();j++){
 		a<<(*b)[j].getLastSymbol(m_wordSize,false);
