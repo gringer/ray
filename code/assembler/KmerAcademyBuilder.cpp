@@ -108,7 +108,7 @@ void KmerAcademyBuilder::process(int*m_mode_send_vertices_sequence_id,
 		#endif
 
 		int p=(m_mode_send_vertices_sequence_id_position);
-		Kmer a(m_readSequence,p,wordSize,'F');
+		Kmer a(m_readSequence,p,wordSize);
 		if(a.isValid()){
 
 			int rankToFlush=0;
