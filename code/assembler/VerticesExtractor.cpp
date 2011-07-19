@@ -110,7 +110,7 @@ void VerticesExtractor::process(int*m_mode_send_vertices_sequence_id,
 
 		int p=(m_mode_send_vertices_sequence_id_position);
 		Kmer a(m_readSequence,p,wordSize);
-		if(a.checkSum()){ // this makes sure the sequence is valid
+		if(a.isValid()){ // this makes sure the sequence is valid
 
 			int rankToFlush=0;
 

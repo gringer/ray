@@ -109,7 +109,7 @@ public:
 	Kmer(uint64_t* rawBits);
 	Kmer(const Kmer& b);
 	~Kmer();
-	bool checkSum();
+	bool isValid();
 	bool isEqual(Kmer*a);
 	bool isLower(Kmer*a);
 	int compare(const Kmer& a)const;

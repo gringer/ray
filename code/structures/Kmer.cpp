@@ -147,7 +147,7 @@ Kmer::Kmer(uint64_t* rawBits){
 			m_u64[i]=rawBits[i];
 		}
 		#ifdef ASSERT
-		assert(checkSum());
+		assert(isValid());
 		#endif
 }
 
@@ -156,7 +156,7 @@ Kmer::Kmer(const Kmer& b){
 		m_u64[i] = b.m_u64[i];
 	}
 	#ifdef ASSERT
-	assert(checkSum());
+	assert(isValid());
 	#endif
 }
 
@@ -169,7 +169,7 @@ Kmer::Kmer(){
 Kmer::~Kmer(){
 }
 
-bool Kmer::checkSum(){
+bool Kmer::isValid(){
 	// warn if first base is unknown and first base is not set to 3
 	// [this should alert to failed k-mer construction]
 	if((m_u64[0] & KMER_FIRSTBASE_KNOWN) == 0){
@@ -315,7 +315,7 @@ vector<Kmer> Kmer::getOutgoingEdges(uint8_t edges,int wordSize){
 
 int Kmer::getFirstCode(bool asColorSpace) {
 	#ifdef ASSERT
-	assert(checkSum());
+	assert(isValid());
 	#endif
 	int firstCode = 4;
 	if(asColorSpace){
@@ -344,7 +344,7 @@ char Kmer::getFirstSymbol(bool asColorSpace){
 
 int Kmer::getLastCode(int wordSize, bool asColorSpace){
 	#ifdef ASSERT
-	assert(checkSum());
+	assert(isValid());
 	#endif
 	int lastCode = 4;
 	if(asColorSpace){
@@ -375,7 +375,7 @@ string Kmer::toString(int wordSize, bool showBases){
 	// should be undefined)
 	// so, limit range checking to that done in set/get Piece
 	#ifdef ASSERT
-	assert(checkSum());
+	assert(isValid());
 	#endif
 	string out("");
 	bool fbKnown = firstBaseKnown();
@@ -408,7 +408,7 @@ string Kmer::toBSString(int wordSize){
 		wordSize = KMER_MAX_PIECES;
 	}
 	#ifdef ASSERT
-	assert(checkSum());
+	assert(isValid());
 	assert(wordSize <= KMER_MAX_PIECES);
 	#endif
 	string out("");
@@ -439,7 +439,7 @@ Kmer Kmer::rComp(int wordSize){
 	// sequence is greater than MAXKMERLENGTH
 	// so, limit range checking to that done in set/get Piece
 	#ifdef ASSERT
-	assert(checkSum());
+	assert(isValid());
 	#endif
 	int flags = getPiece(0);
 	bool firstBaseKnown = ((flags & KMER_FIRSTBASE_KNOWN) != 0);

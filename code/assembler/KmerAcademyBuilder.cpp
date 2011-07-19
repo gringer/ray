@@ -109,7 +109,7 @@ void KmerAcademyBuilder::process(int*m_mode_send_vertices_sequence_id,
 
 		int p=(m_mode_send_vertices_sequence_id_position);
 		Kmer a(m_readSequence,p,wordSize,'F');
-		if(a.checkSum()){
+		if(a.isValid()){
 
 			int rankToFlush=0;
 
