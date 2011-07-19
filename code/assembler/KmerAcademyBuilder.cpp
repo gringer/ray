@@ -90,8 +90,7 @@ void KmerAcademyBuilder::process(int*m_mode_send_vertices_sequence_id,
 		}
 	}else{
 		if(m_mode_send_vertices_sequence_id_position==0){
-			//TODO: make this work for colour-space output
-			m_readSequence = (*m_myReads)[(*m_mode_send_vertices_sequence_id)]->getSeq(m_parameters->getColorSpaceMode(),false);
+			m_readSequence = (*m_myReads)[(*m_mode_send_vertices_sequence_id)]->getSeq(true,false);
 		
 		}
 		int len=m_readSequence.length();
@@ -109,9 +108,8 @@ void KmerAcademyBuilder::process(int*m_mode_send_vertices_sequence_id,
 		#endif
 
 		int p=(m_mode_send_vertices_sequence_id_position);
-		string memory = m_readSequence.substr(p,wordSize);
-		if(isValidDNA(memory)){
-			Kmer a(memory);
+		Kmer a(m_readSequence,p,wordSize,'F');
+		if(a.checkSum()){
 
 			int rankToFlush=0;
 
