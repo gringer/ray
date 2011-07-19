@@ -26,6 +26,7 @@
 #include <graph/GridTable.h>
 #include <communication/MessagesHandler.h>
 #include <core/common_functions.h>
+#include <assembler/Partitioner.h>
 #include <structures/MyForest.h>
 #include <structures/ArrayOfReads.h>
 #include <memory/OnDiskAllocator.h>
@@ -41,10 +42,10 @@
 #include <assembler/SequencesLoader.h>
 #include <assembler/Library.h>
 #include <graph/CoverageGatherer.h>
-#include <assembler/Chooser.h>
+#include <heuristics/Chooser.h>
 #include <communication/MessageProcessor.h>
 #include <structures/Vertex.h>
-#include <assembler/OpenAssemblerChooser.h>
+#include <heuristics/OpenAssemblerChooser.h>
 #include <structures/SplayTree.h>
 #include <assembler/BubbleData.h>
 #include <communication/Message.h>
@@ -69,6 +70,7 @@ class Machine;
 typedef void (Machine::*MachineMethod) ();
 
 class Machine{
+	Partitioner m_partitioner;
 	NetworkTest m_networkTest;
 	EdgePurger m_edgePurger;
 	map<int,map<int,uint64_t> > m_edgeDistribution;

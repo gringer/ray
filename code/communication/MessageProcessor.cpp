@@ -38,7 +38,7 @@
 void MessageProcessor::call_RAY_MPI_TAG_LOAD_SEQUENCES(Message*message){
 	uint32_t*incoming=(uint32_t*)message->getBuffer();
 	for(int i=0;i<(int)incoming[0];i++){
-		m_parameters->setNumberOfSequences(incoming[1+i]);
+		m_parameters->setNumberOfSequences(i,incoming[1+i]);
 	}
 	(*m_mode)=RAY_SLAVE_MODE_LOAD_SEQUENCES;
 }
@@ -1991,3 +1991,13 @@ void MessageProcessor::assignHandlers(){
 void MessageProcessor::setVirtualCommunicator(VirtualCommunicator*a){
 	m_virtualCommunicator=a;
 }
+
+void MessageProcessor::call_RAY_MPI_TAG_COUNT_FILE_ENTRIES(Message*message){
+	(*m_mode)=RAY_SLAVE_MODE_COUNT_FILE_ENTRIES;
+}
+
+void MessageProcessor::call_RAY_MPI_TAG_COUNT_FILE_ENTRIES_REPLY(Message*message){}
+void MessageProcessor::call_RAY_MPI_TAG_REQUEST_FILE_ENTRY_COUNTS(Message*message){}
+void MessageProcessor::call_RAY_MPI_TAG_REQUEST_FILE_ENTRY_COUNTS_REPLY(Message*message){}
+void MessageProcessor::call_RAY_MPI_TAG_FILE_ENTRY_COUNT(Message*message){}
+void MessageProcessor::call_RAY_MPI_TAG_FILE_ENTRY_COUNT_REPLY(Message*message){}

@@ -27,8 +27,8 @@
 #include <sstream>
 #include <communication/Message.h>
 #include <time.h>
-#include <assembler/TipWatchdog.h>
-#include <assembler/BubbleTool.h>
+#include <heuristics/TipWatchdog.h>
+#include <heuristics/BubbleTool.h>
 #include <assert.h>
 #include <core/common_functions.h>
 #include <iostream>
@@ -83,7 +83,10 @@ Machine::Machine(int argc,char*argv[]){
 }
 
 void Machine::start(){
-	m_networkTest.constructor(m_rank,&m_master_mode,&m_slave_mode,m_size,&m_inbox,&m_outbox,&m_parameters,&m_outboxAllocator,m_messagesHandler.getName());
+	m_networkTest.constructor(m_rank,&m_master_mode,&m_slave_mode,m_size,&m_inbox,&m_outbox,&m_parameters,&m_outboxAllocator,m_messagesHandler.getName(),
+		&m_timePrinter);
+	m_partitioner.constructor(&m_outboxAllocator,&m_inbox,&m_outbox,&m_parameters,&m_slave_mode,&m_master_mode);
+
 	m_initialisedAcademy=false;
 	m_initialisedKiller=false;
 	m_coverageInitialised=false;
@@ -359,9 +362,9 @@ void Machine::start(){
 
 	/** configure the virtual communicator. */
 
+	/* ## concatenates 2 symbols */
+
 	#define MACRO_LIST_ITEM(x,y) \
-		\
-	/* ## concatenates 2 symbols */ \
 	m_virtualCommunicator.setReplyType( x, x ## _REPLY ); \
 	m_virtualCommunicator.setElementsPerQuery( x, y );
 
@@ -699,8 +702,22 @@ void Machine::call_RAY_MASTER_MODE_LOAD_CONFIG(){
 	m_master_mode=RAY_MASTER_MODE_TEST_NETWORK;
 }
 
+void Machine::call_RAY_SLAVE_MODE_COUNT_FILE_ENTRIES(){
+	m_partitioner.slaveMethod();
+}
+
+void Machine::call_RAY_MASTER_MODE_COUNT_FILE_ENTRIES(){
+	m_partitioner.masterMethod();
+}
+
+/** actually, call_RAY_MASTER_MODE_LOAD_SEQUENCES 
+ * writes the AMOS file */
 void Machine::call_RAY_MASTER_MODE_LOAD_SEQUENCES(){
-	bool res=m_sl.computePartition(getRank(),getSize(),
+	m_timePrinter.printElapsedTime("File partitioning");
+	cout<<endl;
+
+	/** this won't write anything if -amos was not provided */
+	bool res=m_sl.writeSequencesToAMOSFile(getRank(),getSize(),
 	&m_outbox,
 	&m_outboxAllocator,
 	&m_loadSequenceStep,
@@ -743,7 +760,7 @@ void Machine::call_RAY_SLAVE_MODE_LOAD_SEQUENCES(){
 }
 
 void Machine::call_RAY_MASTER_MODE_TRIGGER_VERTICE_DISTRIBUTION(){
-	m_timePrinter.printElapsedTime("Sequence partitioning");
+	m_timePrinter.printElapsedTime("Sequence loading");
 	cout<<endl;
 	
 	for(int i=0;i<getSize();i++){
