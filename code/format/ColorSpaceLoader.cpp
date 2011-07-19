@@ -29,6 +29,10 @@ using namespace std;
 
 // Find number of sequences in file
 int ColorSpaceLoader::open(string file){
+	if(m_f.is_open()){
+		m_f.close();
+		m_f.clear();
+	}
 	m_f.open(file.c_str());
 	m_size=0;
 	m_loaded=0;
@@ -70,6 +74,7 @@ int ColorSpaceLoader::open(string file){
 	}
 	// reset file pointer to start of file
 	m_f.close();
+	m_f.clear();
 	m_f.open(file.c_str());
 	return EXIT_SUCCESS;
 }
@@ -130,7 +135,9 @@ void ColorSpaceLoader::load(int maxToLoad,ArrayOfReads*reads,MyAllocator*seqMyAl
 		m_loaded++;
 	}
 	if(m_loaded >= m_size){
+		cout << "closing file" << endl;
 		m_f.close();
+		m_f.clear();
 	}
 }
 
