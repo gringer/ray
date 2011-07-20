@@ -66,6 +66,7 @@ public:
 	Read(); // needed for repeated reads (assembler/seedExtender.cpp:1034)
 	// raw sequence
 	Read(uint8_t*seq,int length,bool color = false, bool firstBaseKnown = true);
+	Read(const Read& b,MyAllocator*seqMyAllocator);
 	Read(string sequenceIn,MyAllocator*seqMyAllocator,bool trim);
 	string getSeq(bool color,bool doubleEncoding)const;
 	int length()const;

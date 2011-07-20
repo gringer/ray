@@ -155,9 +155,7 @@ Kmer::Kmer(const Kmer& b){
 	for(int i=0;i<getNumberOfU64();i++){
 		m_u64[i] = b.m_u64[i];
 	}
-	#ifdef ASSERT
-	assert(isValid());
-	#endif
+	//TODO: no validity check because EdgePurgeWorker calls this for a brand new Kmer on array access
 }
 
 Kmer::Kmer(){
@@ -185,7 +183,7 @@ int Kmer::getNumberOfU64(){
 	return KMER_U64_ARRAY_SIZE;
 }
 
-void Kmer::printPieces(){
+void Kmer::printPieces() const {
 	printf("[flags=%d]",getPiece(0));
 	printf("[%d]",getPiece(KMER_FIRSTBASE_LOCATION));
 	for(int i=KMER_STARTPIECE;i<MAXKMERLENGTH;i++){
@@ -507,10 +505,21 @@ uint64_t Kmer::getHash_2(){
 	return key;
 }
 
-void Kmer::operator=(const Kmer&b){
-	for(int i=0;i<KMER_U64_ARRAY_SIZE;i++){
-		m_u64[i]=b.m_u64[i];
+Kmer& Kmer::operator=(const Kmer&b){
+	if(this != &b){
+		for(int i=0;i<KMER_U64_ARRAY_SIZE;i++){
+			m_u64[i]=b.m_u64[i];
+		}
+		#ifdef ASSERT
+		if(!isValid()){
+			cout << "Address: " << &b << endl;
+			b.printPieces();
+			this->printPieces();
+			assert(isValid());
+		}
+		#endif
 	}
+	return *this;
 }
 
 bool Kmer::isColorSpace() const{

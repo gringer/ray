@@ -23,9 +23,9 @@
 #include <assembler/ExtensionElement.h>
 #include <string.h>
 
-void ExtensionElement::setSequence(const char*b,MyAllocator*allocator){
-	m_readSequence=(char*)allocator->allocate((strlen(b)+1)*sizeof(char));
-	strcpy(m_readSequence,b);
+void ExtensionElement::setSequence(string b,MyAllocator*allocator){
+	m_readSequence=(char*)allocator->allocate((b.length()+1)*sizeof(char));
+	strcpy(m_readSequence,b.c_str());
 	m_hasPairedRead=false;
 }
 

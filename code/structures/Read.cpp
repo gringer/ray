@@ -85,6 +85,34 @@ Read::Read(uint8_t*seq,int length,bool color, bool firstBaseKnown){ // for raw s
 	m_firstBaseKnown = firstBaseKnown;
 }
 
+Read::Read(const Read& b,MyAllocator*seqMyAllocator){
+	// note: trimming the read doesn't make sense, as the internal representation for b is 2-bit
+	m_length = b.m_length;
+	m_type = b.m_type;
+
+	m_colorSpace = b.m_colorSpace;
+	m_firstBaseKnown = b.m_firstBaseKnown;
+
+	m_forwardOffset = b.m_forwardOffset;
+	m_reverseOffset = b.m_reverseOffset;
+
+	m_pairedRead = b.m_pairedRead; //TODO: is it safe to do this?
+
+	// copy over the sequence data, allocating new bytes as necessary
+	int requiredBytes = getRequiredBytes();
+	if(b.m_sequence==NULL){
+		m_sequence=NULL;
+	}else{
+		if(seqMyAllocator == NULL){ // used to simplify unit tests
+			m_sequence = new uint8_t[requiredBytes];
+		} else {
+			m_sequence = (uint8_t*)seqMyAllocator->allocate(requiredBytes*sizeof(uint8_t));
+		}
+		memcpy(m_sequence,b.m_sequence,requiredBytes);
+	}
+}
+
+
 Read::Read(string sequenceIn,MyAllocator*seqMyAllocator,bool trimFlag){
 	char firstBase = CSC::bsChrToBS(sequenceIn.at(0));
 	bool inColorSpace = CSC::isColorSpace(sequenceIn);

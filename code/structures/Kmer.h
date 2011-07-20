@@ -19,8 +19,6 @@
 
 */
 
-/* TODO: merge the k-mer-related things here */
-
 #ifndef _Kmer
 #define _Kmer
 
@@ -101,7 +99,6 @@ using namespace std;
 class Kmer{
 	typedef ColorSpaceCodec CSC;
 	uint64_t m_u64[KMER_U64_ARRAY_SIZE];
-	//TODO could possibly also store this as a bitset
 public:
 	//note: all constructors convert to colour-space
 	Kmer();
@@ -113,7 +110,7 @@ public:
 	bool isEqual(Kmer*a);
 	bool isLower(Kmer*a);
 	int compare(const Kmer& a)const;
-	void printPieces();
+	void printPieces()const;
 	void pack(uint64_t*messageBuffer,int*messagePosition);
 	void unpack(uint64_t*messageBuffer,int*messagePosition);
 	void unpack(vector<uint64_t>*messageBuffer,int*messagePosition);
@@ -128,7 +125,7 @@ public:
 	char getFirstSymbol(bool asColorSpace);
 	int getLastCode(int wordSize, bool asColorSpace);
 	char getLastSymbol(int wordSize, bool asColorSpace);
-	void operator=(const Kmer&b);
+	Kmer& operator=(const Kmer&b);
 	bool isColorSpace() const;
 	bool firstBaseKnown() const;
 	bool operator<(const Kmer&b)const;

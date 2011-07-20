@@ -45,11 +45,9 @@ void SequencesLoader::registerSequence(){
 	#endif
 
 	Read*theRead=m_loader.at(m_distribution_sequence_id);
-	string read = theRead->getSeq(m_parameters->getColorSpaceMode(),false);
-	//TODO: use direct array copy in Read class, rather than through a string object
 	//cout<<"DEBUG2 Read="<<m_distribution_sequence_id<<" color="<<m_parameters->getColorSpaceMode()<<" Seq= "<<read<<endl;
 
-	Read myRead(read,&(*m_persistentAllocator),true);
+	Read myRead(*theRead,&(*m_persistentAllocator));
 	m_myReads->push_back(&myRead);
 
 	if(m_LOADER_isLeftFile){
@@ -159,7 +157,7 @@ bool SequencesLoader::writeSequencesToAMOSFile(int rank,int size,
 			for(uint64_t i=0;i<m_loader.size();i++){
 				uint64_t iid=m_distribution_currentSequenceId;
 				m_distribution_currentSequenceId++;
-				//TODO: get this to work with output in colour-space (can AMOS handle it?)
+				//note: Amos cannot handle colour-space, so reads are written as base-space
 				string seq = m_loader.at(i)->getSeq(false,false);
 				#ifdef ASSERT
 				assert(seq.length()>0);
