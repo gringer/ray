@@ -28,31 +28,6 @@
 #endif
 using namespace std;
 
-vector<uint64_t> CoverageDistribution::smoothData(vector<uint64_t>*y){
-	vector<uint64_t> output;
-
-	int window=2;
-
-	for(int i=0; i < (int)y->size(); i++){
-		uint64_t sum=0;
-		int width = window;
-		// reduce width if too close to the start
-		if(i < width){
-			width = i;
-		}
-		// reduce width if too close to the end
-		if((y->size() - 1 - i) < width){
-			width = y->size() - 1 - i;
-		}
-		for(int j = i - width; j <= i + width; j++){
-			sum += y->at(j);
-		}
-		output.push_back(sum / (width + 1));
-	}
-	//note that the total area (i.e. sum) will be lower due to the width reduction
-	return output;
-}
-
 CoverageDistribution::CoverageDistribution(map<int,uint64_t>*distributionOfCoverage,string*file){
 	if(file!=NULL){
 		ofstream f;
@@ -69,21 +44,50 @@ CoverageDistribution::CoverageDistribution(map<int,uint64_t>*distributionOfCover
 		x.push_back(i->first);
 		y.push_back(i->second);
 	}
-	vector<uint64_t> smoothed=smoothData(&y);
-	#ifdef DEBUG_CoverageDistribution
-	for(int current=0;current<(int)x.size();current++){
-		cout<<"AVERAGE\t"<<x.at(current)<<"\t"<<y.at(current)<<"\t"<<smoothed.at(current)<<endl;
-	}
-	#endif
 
-	#ifdef ASSERT
-	if(x.size()!=smoothed.size()){
-		cout<<x.size()<<" vs "<<smoothed.size()<<endl;
+	int windowSize=10;
+
+	/** get the votes to find the peak */
+	map<int,int> votes;
+	for(int i=0;i<(int)x.size();i++){
+		int largestPosition=i;
+		for(int j=0;j<windowSize;j++){
+			int position=i+j;
+			if(position >= x.size())
+				break;
+			if(y.at(position) > y.at(largestPosition))
+				largestPosition=position;
+		}
+	
+		if(y.at(largestPosition)>4096*2 && x[largestPosition]!=65535)
+			votes[largestPosition]++;
 	}
-	assert(x.size()==smoothed.size());
-	assert(x.size()==y.size());
-	#endif
-	findPeak(&x,&smoothed,&y);
+
+	/** check votes */
+	int largestPosition=votes.begin()->first;
+	for(map<int,int>::iterator i=votes.begin();i!=votes.end();i++){
+		if(i->second > votes[largestPosition] || y[i->first] > y[largestPosition])
+			largestPosition=i->first;
+		//cout<<"x: "<<x[i->first]<<" votes: "<<i->second<<" y: "<<y[i->first]<<endl;
+	}
+	
+	int minimumPosition=largestPosition;
+	int i=largestPosition;
+	while(i >= 0){
+		if(y[i] <= y[minimumPosition])
+			minimumPosition=i;
+		i--;
+	}
+
+	m_minimumCoverage=x[minimumPosition];
+	m_peakCoverage=x[largestPosition];
+
+	m_repeatCoverage=2*m_peakCoverage;
+	int diff=m_peakCoverage-m_minimumCoverage;
+	int candidate=m_peakCoverage+diff;
+
+	if(candidate<m_repeatCoverage)
+		m_repeatCoverage=candidate;
 }
 
 int CoverageDistribution::getPeakCoverage(){
@@ -92,89 +96,6 @@ int CoverageDistribution::getPeakCoverage(){
 
 int CoverageDistribution::getMinimumCoverage(){
 	return m_minimumCoverage;
-}
-
-void CoverageDistribution::findPeak(vector<int>*x,vector<uint64_t>*y,vector<uint64_t>*rawValues){
-	m_minimumCoverage=1;
-	m_peakCoverage=1;
-	m_repeatCoverage=1;
-
-	vector<double> derivatives;
-	int n=x->size();
-	derivatives.push_back(0);
-	for(int i=1;i<n;i++){
-		int64_t a=(y->at(i)-y->at(i-1));
-		int b=(x->at(i)-x->at(i-1));
-		double derivative=(0.0+a)/(0.0+b);
-		#ifdef DEBUG_CoverageDistribution
-		cout<<x->at(i)<<" "<<derivative<<endl;
-		#endif
-		derivatives.push_back(derivative);
-	}
-	
-	vector<int> maximums;
-/*
- * The number of previous derivative that must go strictly up
- */
-	int parameter=2;
-
-	for(int i=1;i<n;i++){
-		int firstToVerify=i-parameter;
-		if(firstToVerify<1){
-			continue;
-		}
-		int lastToVerify=i-1;
-		bool goingUp=true;
-		for(int j=firstToVerify;j<=lastToVerify;j++){
-			if(derivatives[j]<0){
-				goingUp=false;
-			}
-		}
-		if(!goingUp){
-			continue;
-		}
-		if(derivatives[i-1]>0&&derivatives[i]<0){
-			#ifdef DEBUG_CoverageDistribution
-			cout<<"MaximumAt "<<x->at(i)<<" Self="<<derivatives[i]<<" Previous="<<derivatives[i-1]<<endl;
-			#endif
-			maximums.push_back(i);
-		}
-	}
-	if(maximums.size()==0){
-		return;
-	}
-	int peakI=maximums[0];
-	for(int i=0;i<(int)maximums.size();i++){
-		if(y->at(maximums[i])>y->at(peakI)){
-			peakI=maximums[i];
-			#ifdef DEBUG_CoverageDistribution
-			cout<<"NewPeak= "<<x->at(peakI)<<endl;
-			#endif
-		}
-	}
-
-	/* refine the peak */
-	while(peakI-1>=0 && peakI-1<(int)rawValues->size() &&rawValues->at(peakI-1)>rawValues->at(peakI))
-		peakI--;
-
-	while(peakI+1>=0 && peakI+1<(int)rawValues->size() &&rawValues->at(peakI+1)>rawValues->at(peakI))
-		peakI++;
-
-	int minI=peakI;
-	for(int i=0;i<peakI;i++){
-		if(y->at(i)<y->at(minI)){
-			minI=i;
-		}
-	}
-
-
-	m_peakCoverage=x->at(peakI);
-	m_minimumCoverage=x->at(minI);
-	m_repeatCoverage=2*m_peakCoverage;
-	int diff=m_peakCoverage-m_minimumCoverage;
-	int candidate=m_peakCoverage+diff;
-	if(candidate<m_repeatCoverage)
-		m_repeatCoverage=candidate;
 }
 
 int CoverageDistribution::getRepeatCoverage(){

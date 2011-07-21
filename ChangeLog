@@ -22,6 +22,12 @@ not circularized DNA (shorter outer distance).
 * Colour space loader automatically works out CSFASTQ/CSFASTA format
 * Added colour space decoder unit test
  - update to show output (no output == success is clean, but not as rewarding)
+* New option: -show-extension-choice shows possible choices when the path is branching in the
+graph.
+* New experimental assembly choice engine: Ray NovaEngine. NovaEngine makes better choices for
+mate-pair reads.
+* Simplified the algorithm that finds a peak in the coverage distribution and added 35 unit
+tests to test it.
 
 
 = 1.6.1 'sunray' =
