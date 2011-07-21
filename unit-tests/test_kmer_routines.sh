@@ -25,6 +25,7 @@ TGAAATGGAAATGGTCTGGGAAAAACAACTAAAAGATATTAT
 
 CODE=../code; \
 g++ $CODE/format/ColorSpaceCodec.cpp \
+    $CODE/core/OperatingSystem.cpp \
     $CODE/structures/Read.cpp \
     $CODE/core/common_functions.cpp \
     $CODE/memory/malloc_types.cpp \
