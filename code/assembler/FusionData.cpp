@@ -21,6 +21,7 @@
 
 #include <assert.h>
 #include <assembler/FusionData.h>
+#include <core/OperatingSystem.h>
 #include <sstream>
 #include <communication/Message.h>
 #include <memory/malloc_types.h>
@@ -49,7 +50,7 @@ void FusionData::distribute(SeedingData*m_seedingData,ExtensionData*m_ed,int get
 
 		if(m_parameters->showMemoryUsage()){
 			showMemoryUsage(m_rank);
-			now();
+			showDate();
 		}
 		return;
 	}
@@ -60,7 +61,7 @@ void FusionData::distribute(SeedingData*m_seedingData,ExtensionData*m_ed,int get
 			fflush(stdout);
 			if(m_parameters->showMemoryUsage()){
 				showMemoryUsage(getRank);
-				now();
+				showDate();
 			}
 		}
 	}
@@ -162,7 +163,7 @@ void FusionData::finishFusions(){
 		fflush(stdout);
 		if(m_parameters->showMemoryUsage()){
 			showMemoryUsage(m_rank);
-			now();
+			showDate();
 		}
 
 		Message aMessage(message,1,MASTER_RANK,RAY_MPI_TAG_FINISH_FUSIONS_FINISHED,getRank());
@@ -188,7 +189,7 @@ void FusionData::finishFusions(){
 	
 			if(m_parameters->showMemoryUsage()){
 				showMemoryUsage(getRank());
-				now();
+				showDate();
 			}
 		}
 
@@ -248,7 +249,7 @@ void FusionData::finishFusions(){
 	
 					if(m_parameters->showMemoryUsage()){
 						showMemoryUsage(getRank());
-						now();
+						showDate();
 					}
 				}
 				vector<Kmer> a;
@@ -489,7 +490,7 @@ void FusionData::makeFusions(){
 
 		if(m_parameters->showMemoryUsage()){
 			showMemoryUsage(m_rank);
-			now();
+			showDate();
 		}
 		return;
 	}else if((int)m_ed->m_EXTENSION_contigs[m_seedingData->m_SEEDING_i].size()<=END_LENGTH){
@@ -519,7 +520,7 @@ void FusionData::makeFusions(){
 					fflush(stdout);
 					if(m_parameters->showMemoryUsage()){
 						showMemoryUsage(getRank());
-						now();
+						showDate();
 					}
 				}
 

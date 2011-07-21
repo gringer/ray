@@ -31,14 +31,8 @@
 #include <iostream>
 #include <string>
 #include <cstring>
+#include <core/OperatingSystem.h>
 #include <sstream>
-
-#ifdef OS_POSIX
-#include <unistd.h>
-#endif
-#ifdef OS_WIN
-#include <windows.h>
-#endif
 
 using namespace std;
 
@@ -120,35 +114,10 @@ int roundNumber(int s,int alignment){
 	return ((s/alignment)+1)*alignment;
 }
 
-/** real-time */
-uint64_t getMilliSeconds(){
-	uint64_t milliSeconds=0;
-	#ifdef HAVE_CLOCK_GETTIME
-	timespec temp;
-	clock_gettime(CLOCK_PROCESS_CPUTIME_ID,&temp);
-	uint64_t seconds=temp.tv_sec;
-	uint64_t nanoseconds=temp.tv_nsec;
-	milliSeconds=seconds*1000+nanoseconds/1000/1000;
-	#endif
-	return milliSeconds;
-}
-
 void showMemoryUsage(int rank){
-	#ifdef __linux__
-	ifstream f("/proc/self/status");
-	while(!f.eof()){
-		string key;
-		f>>key;
-		if(key=="VmData:"){
-			uint64_t count;
-			f>>count;
-			cout<<"Rank "<<rank<<": assembler memory usage: "<<count<<" KiB"<<endl;
-			cout.flush();
-			break;
-		}
-	}
-	f.close();
-	#endif
+	uint64_t count=getMemoryUsageInKiBytes();
+	cout<<"Rank "<<rank<<": assembler memory usage: "<<count<<" KiB"<<endl;
+	cout.flush();
 }
 
 uint64_t getPathUniqueId(int rank,int id){
@@ -164,15 +133,6 @@ int getIdFromPathUniqueId(uint64_t a){
 int getRankFromPathUniqueId(uint64_t a){
 	int rank=a%MAX_NUMBER_OF_MPI_PROCESSES;
 	return rank;
-}
-
-void now(){
-	#ifdef OS_POSIX
-	time_t m_endingTime=time(NULL);
-	struct tm * timeinfo;
-	timeinfo=localtime(&m_endingTime);
-	cout<<"Date: "<<asctime(timeinfo);
-	#endif
 }
 
 void print64(uint64_t a){
@@ -210,34 +170,6 @@ uint8_t charToCode(char a){
 		default:
 			return RAY_NUCLEOTIDE_A;
 	}
-}
-
-char codeToChar(uint8_t a,bool color){
-	if(color){
-		switch(a){
-			case RAY_NUCLEOTIDE_A:
-				return DOUBLE_ENCODING_A_COLOR;
-			case RAY_NUCLEOTIDE_T:
-				return DOUBLE_ENCODING_T_COLOR;
-			case RAY_NUCLEOTIDE_C:
-				return DOUBLE_ENCODING_C_COLOR;
-			case RAY_NUCLEOTIDE_G:
-				return DOUBLE_ENCODING_G_COLOR;
-		}
-		return DOUBLE_ENCODING_A_COLOR;
-	}
-
-	switch(a){
-		case RAY_NUCLEOTIDE_A:
-			return 'A';
-		case RAY_NUCLEOTIDE_T:
-			return 'T';
-		case RAY_NUCLEOTIDE_C:
-			return 'C';
-		case RAY_NUCLEOTIDE_G:
-			return 'G';
-	}
-	return 'A';
 }
 
 int portableProcessId(){

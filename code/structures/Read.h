@@ -28,7 +28,6 @@
 #include <format/ColorSpaceCodec.h>
 #include <memory/MyAllocator.h>
 #include <structures/PairedRead.h>
-#include <memory/OnDiskAllocator.h>
 using namespace std;
 
 #define TYPE_SINGLE_END 0

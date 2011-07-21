@@ -19,31 +19,25 @@
 
 */
 
-#ifndef _ColorSpaceLoader
-#define _ColorSpaceLoader
-
+/** only this file knows the operating system */
 #include <string>
-#include <vector>
-#include <structures/ArrayOfReads.h>
-#include <fstream>
-#include <memory/MyAllocator.h>
-#include <stdio.h>
-#include <format/ColorSpaceCodec.h>
-#include <structures/Read.h>
+#include <core/constants.h> 
 using namespace std;
 
-class ColorSpaceLoader{
-	enum FileType {UNKNOWN, FASTA, FASTQ, CSFASTA, CSFASTQ, INVALID};
-	ColorSpaceCodec m_decoder;
-	ifstream m_f;
-	int m_size;
-	int m_loaded;
-	FileType m_ft;
-public:
-	void load(int maxToLoad,ArrayOfReads*reads,MyAllocator*seqMyAllocator);
-	int open(string file);
-	int getSize();
-};
+/** show memory usage */
+uint64_t getMemoryUsageInKiBytes();
 
+string getOperatingSystem();
 
-#endif
+void showDate();
+
+/**
+ * get the process identifier 
+ */
+int portableProcessId();
+
+uint64_t getMilliSeconds();
+
+void showMemoryUsage(int rank);
+
+void getMicroSeconds(uint64_t*seconds,uint64_t*microSeconds);

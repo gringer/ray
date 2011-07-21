@@ -22,6 +22,7 @@
 #include <core/constants.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <assembler/KmerAcademyBuilder.h>
 #include <assert.h>
 #include <communication/Message.h>
@@ -110,6 +111,8 @@ void KmerAcademyBuilder::process(int*m_mode_send_vertices_sequence_id,
 		int p=(m_mode_send_vertices_sequence_id_position);
 		Kmer a(m_readSequence,p,wordSize);
 		if(a.isValid()){
+
+			/* TODO: _vertexRank (2 calls) calls complementVertex so there are 3 calls to complementVertex are done while 1 would suffice (Reported by David Eccles) */
 
 			int rankToFlush=0;
 

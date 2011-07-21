@@ -45,7 +45,6 @@ typedef ColorSpaceCodec CSC; // makes calling static functions a bit less painfu
  */
 string reverseComplement(string a,char*rev);
 
-
 /*
  * Encode a char
  */
@@ -74,24 +73,16 @@ Kmer kmerAtPosition(const char*string,int pos,int w,char strand,bool color);
 
 int roundNumber(int number,int alignment);
 
-uint64_t getMilliSeconds();
-
-void showMemoryUsage(int rank);
-
 char complementNucleotide(char c);
 
 uint64_t getPathUniqueId(int rank,int id);
 int getIdFromPathUniqueId(uint64_t a);
 int getRankFromPathUniqueId(uint64_t a);
 
-void now();
-
 string reverseComplement(string*a);
 
 void print64(uint64_t a);
 void print8(uint8_t a);
-
-int portableProcessId();
 
 #endif
 
