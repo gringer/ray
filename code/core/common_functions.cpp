@@ -171,13 +171,3 @@ uint8_t charToCode(char a){
 			return RAY_NUCLEOTIDE_A;
 	}
 }
-
-int portableProcessId(){
-	#ifdef OS_POSIX
-	return getpid();
-	#elif defined(OS_WIN)
-	return GetCurrentProcessId();
-	#else
-	return -1;
-	#endif
-}
