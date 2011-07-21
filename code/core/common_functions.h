@@ -45,15 +45,6 @@ typedef ColorSpaceCodec CSC; // makes calling static functions a bit less painfu
  */
 string reverseComplement(string a,char*rev);
 
-/*
- * transform a Kmer in a string
- */
-string idToWord(Kmer*i,int wordSize,bool color);
-
-/*
- * transform a encoded nucleotide in a char
- */
-char codeToChar(uint8_t a,bool color);
 
 /*
  * Encode a char
@@ -61,10 +52,15 @@ char codeToChar(uint8_t a,bool color);
 uint8_t charToCode(char a);
 
 /*
+ * transform a encoded nucleotide in a char
+ */
+char codeToChar(uint8_t a,bool color);
+
+
+/*
  * verify that x has only A,T,C, and G 
  * (or 0,2,3, and 3 for colour-space)
  */
-bool isValidDNA(char*x);
 bool isValidDNA(string x);
 
 /*
@@ -74,8 +70,6 @@ string addLineBreaks(string sequence,int a);
 
 string convertToString(vector<Kmer>*b,int m_wordSize,bool color);
 
-int vertexRank(Kmer*a,int _size,int w,bool color);
-
 Kmer kmerAtPosition(const char*string,int pos,int w,char strand,bool color);
 
 int roundNumber(int number,int alignment);
@@ -84,24 +78,7 @@ uint64_t getMilliSeconds();
 
 void showMemoryUsage(int rank);
 
-/**
- * get the outgoing Kmer objects for a Kmer a having edges and
- * a k-mer length k
- */
-vector<Kmer> _getOutgoingEdges(Kmer*a,uint8_t edges,int k);
-
-/**
- * get the ingoing Kmer objects for a Kmer a having edges and
- * a k-mer length k
- */
-vector<Kmer> _getIngoingEdges(Kmer*a,uint8_t edges,int k);
-
 char complementNucleotide(char c);
-
-uint64_t hash_function_1(Kmer*a);
-uint64_t hash_function_2(Kmer*a);
-
-uint8_t invertEdges(uint8_t a);
 
 uint64_t getPathUniqueId(int rank,int id);
 int getIdFromPathUniqueId(uint64_t a);

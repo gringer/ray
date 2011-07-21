@@ -24,9 +24,13 @@
 #include <stdio.h>
 #include <assert.h>
 #include <vector>
+#include <string>
+#include <stdint.h>
 #include <core/common_functions.h>
 #include <format/ColorSpaceCodec.h>
 #include <cryptography/crypto.h>
+
+using namespace std;
 
 /*
  * initialise Kmer to a subsequence of a given string.
@@ -311,11 +315,11 @@ vector<Kmer> Kmer::getOutgoingEdges(uint8_t edges,int wordSize){
 }
 
 
-int Kmer::getFirstCode(bool asColorSpace) {
+uint8_t Kmer::getFirstCode(bool asColorSpace) {
 	#ifdef ASSERT
 	assert(isValid());
 	#endif
-	int firstCode = 4;
+	uint8_t firstCode = 4;
 	if(asColorSpace){
 		firstCode = getPiece(KMER_STARTPIECE);
 	} else {
@@ -340,11 +344,11 @@ char Kmer::getFirstSymbol(bool asColorSpace){
 	}
 }
 
-int Kmer::getLastCode(int wordSize, bool asColorSpace){
+uint8_t Kmer::getLastCode(int wordSize, bool asColorSpace){
 	#ifdef ASSERT
 	assert(isValid());
 	#endif
-	int lastCode = 4;
+	uint8_t lastCode = 4;
 	if(asColorSpace){
 		lastCode = getPiece(wordSize);
 	} else {
@@ -479,7 +483,7 @@ void Kmer::unpack(vector<uint64_t>*messageBuffer,int*messagePosition){
 	}
 }
 
-uint64_t Kmer::getHash_1(){
+uint64_t Kmer::hash_function_1(){
 	uint64_t key=m_u64[0];
 	for(int i=0;i<getNumberOfU64();i++){
 		uint64_t newKey = m_u64[i];
@@ -487,18 +491,24 @@ uint64_t Kmer::getHash_1(){
 			// clear unknown bit and first base, as these may change
 			newKey &= KMER_CLEAR_FIRSTBASE;
 		}
+		if(i == KMER_LASTU64_LOCATION){
+			newKey &= KMER_CLEAR_LASTBASE;
+		}
 		key ^= uniform_hashing_function_1_64_64(newKey);
 	}
 	return key;
 }
 
-uint64_t Kmer::getHash_2(){
+uint64_t Kmer::hash_function_2(){
 	uint64_t key=m_u64[0];
 	for(int i=0;i<getNumberOfU64();i++){
 		uint64_t newKey = m_u64[i];
 		if(i == 0){
 			// clear unknown bit and first base, as these may change
 			newKey &= KMER_CLEAR_FIRSTBASE;
+		}
+		if(i == KMER_LASTU64_LOCATION){
+			newKey &= KMER_CLEAR_LASTBASE;
 		}
 		key ^= uniform_hashing_function_2_64_64(newKey);
 	}
@@ -577,3 +587,9 @@ bool Kmer::isEqual(Kmer*a){
 	return (this->compare(*a) == 0);
 }
 
+int Kmer::vertexRank(int arraySize,int wordSize){
+	Kmer b=rComp(wordSize);
+	if(isLower(&b))
+		b=*this;
+	return b.hash_function_1()%(arraySize);
+}

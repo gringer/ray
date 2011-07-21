@@ -31,6 +31,7 @@
 #ifdef ASSERT
 #include <assert.h>
 #endif
+#include <string>
 using namespace std;
 
 /*
@@ -114,17 +115,29 @@ public:
 	void pack(uint64_t*messageBuffer,int*messagePosition);
 	void unpack(uint64_t*messageBuffer,int*messagePosition);
 	void unpack(vector<uint64_t>*messageBuffer,int*messagePosition);
-	uint64_t getHash_1();
-	uint64_t getHash_2();
+	uint64_t hash_function_1();
+	uint64_t hash_function_2();
 	string toBSString(int wordsize);
+	/*
+	 * transform a Kmer in a string
+	 */
 	string toString(int wordsize, bool showBases);
 	Kmer rComp(int wordSize);
-	vector<Kmer> getIngoingEdges(uint8_t edges,int wordSize);
-	vector<Kmer> getOutgoingEdges(uint8_t edges,int wordSize);
-	int getFirstCode(bool asColorSpace);
+	uint8_t getFirstCode(bool asColorSpace);
 	char getFirstSymbol(bool asColorSpace);
-	int getLastCode(int wordSize, bool asColorSpace);
+	uint8_t getLastCode(int wordSize, bool asColorSpace);
 	char getLastSymbol(int wordSize, bool asColorSpace);
+	int vertexRank(int arraySize,int wordSize);
+	/**
+	 * get the outgoing Kmer objects for a Kmer a having edges and
+	 * a k-mer length k
+	 */
+	vector<Kmer> getOutgoingEdges(uint8_t edges,int wordSize);
+	/**
+	 * get the ingoing Kmer objects for a Kmer a having edges and
+	 * a k-mer length k
+	 */
+	vector<Kmer> getIngoingEdges(uint8_t edges,int wordSize);
 	Kmer& operator=(const Kmer&b);
 	bool isColorSpace() const;
 	bool firstBaseKnown() const;
@@ -199,6 +212,8 @@ private:
 	}
 
 }ATTRIBUTE_PACKED;
+
+
 
 
 #endif

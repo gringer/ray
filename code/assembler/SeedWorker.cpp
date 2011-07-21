@@ -198,8 +198,6 @@ void SeedWorker::do_1_1_test(){
 
 			m_SEEDING_receivedOutgoingEdges=m_SEEDING_currentVertex.getOutgoingEdges(edges,m_wordSize);
 
-
-
 			m_ingoingCoverages.clear();
 			m_outgoingCoverages.clear();
 

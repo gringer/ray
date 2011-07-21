@@ -29,7 +29,7 @@ void f2(){
 	while(samples--){
 		base[1]=rand();
 		Kmer kmer(base);
-		int rank=vertexRank(&kmer,size,wordSize,false);
+		int rank=kmer.vertexRank(size,wordSize);
 		counts[rank]++;
 	}
 	vector<int> data;
@@ -66,7 +66,7 @@ void f1(){
 		base[0] &= ~(0b11); base[0] |= 0b10;
 		base[1]=rand();
 		Kmer kmer(base);
-		int rank=vertexRank(&kmer,size,wordSize,false);
+		int rank=kmer.vertexRank(size,wordSize);
 		counts[rank]++;
 	}
 	vector<int> data;

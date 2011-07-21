@@ -75,17 +75,6 @@ bool isValidDNA(string x){
 	return true;
 }
 
-bool isValidDNA(char*x){
-	int len=strlen(x);
-	for(int i=0;i<len;i++){
-		char a=x[i];
-		if(CSC::csChrToInt(a) > 3){
-			return false;
-		}
-	}
-	return true;
-}
-
 string addLineBreaks(string dna,int columns){
 	ostringstream output;
 	int j=0;
@@ -121,9 +110,9 @@ string convertToString(vector<Kmer>*b,int m_wordSize,bool color){
 int vertexRank(Kmer*a,int _size,int w,bool color){
 	Kmer b=a->rComp(w);
 	if(b.isLower(a)){
-		return(b.getHash_1() % _size);
+		return(b.hash_function_1() % _size);
 	} else {
-		return(a->getHash_1() % _size);
+		return(a->hash_function_1() % _size);
 	}
 }
 
@@ -161,42 +150,6 @@ void showMemoryUsage(int rank){
 	f.close();
 	#endif
 }
-
-	// outgoing  ingoing
-	//
-	// G C T A G C T A
-	//
-	// 7 6 5 4 3 2 1 0
-
-uint8_t invertEdges(uint8_t edges){
-	uint8_t out=0;
-
-	uint64_t mask=3;
-
-	// outgoing edges
-	for(int i=0;i<4;i++){
-		int j=((((uint64_t)edges)<<(sizeof(uint64_t)*8-5-i))>>(sizeof(uint64_t)*8-1));
-		if(j==1){
-			j=~i&mask;
-			
-			uint8_t newBits=(1<<j);
-			out=out|newBits;
-		}
-	}
-
-	// Ingoing edges
-	for(int i=0;i<4;i++){
-		int j=((((uint64_t)edges)<<((sizeof(uint64_t)*8-1)-i))>>(sizeof(uint64_t)*8-1));
-		if(j==1){
-			j=~i&mask;
-			
-			uint8_t newBits=(1<<(4+j));
-			out=out|newBits;
-		}
-	}
-	return out;
-}
-
 
 uint64_t getPathUniqueId(int rank,int id){
 	uint64_t a=id;

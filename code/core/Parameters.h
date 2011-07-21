@@ -150,7 +150,6 @@ public:
 	int getMaximumAllowedCoverage();
 	int getMinimumCoverage();
 	void setMinimumCoverage(int a);
-	Kmer _complementVertex(Kmer*a);
 	bool hasPairedReads();
 	int _vertexRank(Kmer*a);
 	string getMemoryPrefix();

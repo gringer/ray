@@ -1193,7 +1193,7 @@ bool Parameters::hasPairedReads(){
 }
 
 int Parameters::_vertexRank(Kmer*a){
-	return vertexRank(a,m_size,m_wordSize,m_colorSpaceMode);
+	return a->vertexRank(m_size,m_wordSize);
 }
 int Parameters::getSlaveMode(){
 	return *m_slaveMode;

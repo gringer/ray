@@ -57,7 +57,7 @@ void DepthFirstSearchData::depthFirstSearch(Kmer root,Kmer a,int maxDepth,
 		(*vertexCoverageRequested)=false;
 		#ifdef SHOW_MINI_GRAPH
 		cout<<"<MiniGraph>"<<endl;
-		cout<<idToWord(root,wordSize,parameters->getColorSpaceMode())<<" -> "<<idToWord(a,wordSize,parameters->getColorSpaceMode())<<endl;
+		cout<<root->idToWord(wordSize,parameters->getColorSpaceMode())<<" -> "<<a->idToWord(wordSize,parameters->getColorSpaceMode())<<endl;
 		#endif
 	}
 	if(m_depthFirstSearchVerticesToVisit.size()>0){
@@ -129,7 +129,7 @@ void DepthFirstSearchData::depthFirstSearch(Kmer root,Kmer a,int maxDepth,
 
 
 					#ifdef SHOW_MINI_GRAPH
-					cout<<idToWord(vertexToVisit,wordSize,parameters->getColorSpaceMode())<<" -> "<<idToWord(nextVertex,wordSize,parameters->getColorSpaceMode())<<endl;
+					cout<<vertexToVisit->idToWord(wordSize,parameters->getColorSpaceMode())<<" -> "<<nextVertex->idToWord(wordSize,parameters->getColorSpaceMode())<<endl;
 					#endif
 				}
 				(*edgesRequested)=false;
