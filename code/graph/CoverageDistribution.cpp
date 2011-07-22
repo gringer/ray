@@ -38,13 +38,6 @@ CoverageDistribution::CoverageDistribution(map<int,uint64_t>*distributionOfCover
 		f.close();
 	}
 	
-	vector<int> x;
-	vector<uint64_t> y;
-	for(map<int,uint64_t>::iterator i=distributionOfCoverage->begin();i!=distributionOfCoverage->end();i++){
-		x.push_back(i->first);
-		y.push_back(i->second);
-	}
-
 	int windowSize=10;
 	int minimumX=1;
 	uint64_t minimumY=2*4096;
@@ -52,45 +45,54 @@ CoverageDistribution::CoverageDistribution(map<int,uint64_t>*distributionOfCover
 	int maximumX=65535-1;
 	int safeThreshold=256;
 
+	vector<int> x;
+	vector<uint64_t> y;
+	for(map<int,uint64_t>::iterator i=distributionOfCoverage->begin();i!=distributionOfCoverage->end();i++){
+		int tx = i->first;
+		uint64_t ty = i->second;
+		if((tx >= minimumX) && (tx <= maximumX)){
+			if((tx < safeThreshold) || (ty >= minimumY2)){
+				x.push_back(tx);
+				y.push_back(ty);
+			}
+		}
+	}
+
 	/** get the votes to find the peak */
-	map<int,int> votes;
+	uint8_t votes[x.size()];
+	for(int i = 0; i < (int)x.size(); i++){
+		votes[i] = 0; // initialise to zero, if needed
+	}
 	for(int i=0;i<(int)x.size();i++){
 		int largestPosition=i;
-		for(int j=0;j<windowSize;j++){
-			int position=i+j;
-			if(position >= (int)x.size())
-				break;
-			if(y.at(position) > y.at(largestPosition))
+		for(int position=i;(position < (int)x.size()) && ((position - i) < windowSize); position++){
+			if(y[position] > y[largestPosition])
 				largestPosition=position;
 		}
-	
-		if(x[largestPosition]>maximumX)
-			continue;
-
-		if(x[largestPosition]<minimumX)
-			continue;
-	
-		if(x[largestPosition] >= safeThreshold && y[largestPosition] < minimumY2)
-			continue;
-		
-		if(y.at(largestPosition)>minimumY)
+		if(y[largestPosition]>minimumY){
+			cout << "y = " << y[largestPosition] << ", minimumY = " << minimumY << endl;
 			votes[largestPosition]++;
+		}
 	}
-
 	/** check votes */
-	int largestPosition=votes.begin()->first;
-	for(map<int,int>::iterator i=votes.begin();i!=votes.end();i++){
-		if((i->second > votes[largestPosition] || y[i->first] > y[largestPosition]))
-			largestPosition=i->first;
-		//cout<<"x: "<<x[i->first]<<" votes: "<<i->second<<" y: "<<y[i->first]<<endl;
+	/** Select the last peak with any votes, or fall back to the highest value (i.e. max(y))
+	 * if there are no votes */
+	int largestPosition=0;
+	for(int i=0; i < (int)x.size(); i++){
+		//bool changed = false;
+		if((votes[i] > votes[largestPosition]) || (y[i] > y[largestPosition])){
+			largestPosition = i;
+			//changed = true;
+		}
+		//cout << "x = " << x[i] << ", y = " << y[i] <<
+		//		", vote = " << (int)votes[i] << (changed?"*":"") << endl;
 	}
 	
-	int minimumPosition=largestPosition;
-	int i=largestPosition;
-	while(i >= 0){
-		if(y[i] <= y[minimumPosition])
-			minimumPosition=i;
-		i--;
+	int minimumPosition=0;
+	for(int i = 0; i <= largestPosition; i++){
+		if(y[i] < y[minimumPosition]){
+			minimumPosition = i;
+		}
 	}
 
 	m_minimumCoverage=x[minimumPosition];
