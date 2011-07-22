@@ -39,6 +39,8 @@
 void MessageProcessor::call_RAY_MPI_TAG_LOAD_SEQUENCES(Message*message){
 	uint32_t*incoming=(uint32_t*)message->getBuffer();
 	for(int i=0;i<(int)incoming[0];i++){
+		if(m_parameters->hasOption("debug:partitioner"))
+			cout<<"Rank "<<m_parameters->getRank()<<" RAY_MPI_TAG_LOAD_SEQUENCES File "<<i<<" "<<incoming[i+1]<<endl;
 		m_parameters->setNumberOfSequences(i,incoming[1+i]);
 	}
 	(*m_mode)=RAY_SLAVE_MODE_LOAD_SEQUENCES;
@@ -120,6 +122,11 @@ void MessageProcessor::call_RAY_MPI_TAG_GET_READ_MARKERS(Message*message){
 	int outputPosition=0;
 	for(int i=0;i<count;i++){
 		int readId=incoming[i];
+		#ifdef ASSERT
+		if(readId>=(int)m_myReads->size())
+			cout<<"Fatal Error: ReadIndex: "<<readId<<" but Reads: "<<m_myReads->size()<<endl;
+		assert(readId<(int)m_myReads->size());
+		#endif
 		Read*read=m_myReads->at(readId);
 		int readLength=read->length();
 		outgoingMessage[outputPosition++]=readLength;
@@ -429,6 +436,13 @@ void MessageProcessor::call_RAY_MPI_TAG_VERTICES_DATA(Message*message){
 		Kmer l;
 		int pos=i;
 		l.unpack(incoming,&pos);
+
+		/* TODO: remove call to reverseComplement, this if should never be picked up because only the lowest k-mers are sent
+ *
+ * I am not sure it would work but if it does that would reduces the number of sent messages */
+		Kmer reverseComplement=l.rComp(m_parameters->getWordSize());
+		if(reverseComplement<l)
+			continue;
 
 		if((*m_last_value)!=(int)m_subgraph->size() && (int)m_subgraph->size()%100000==0){
 			(*m_last_value)=m_subgraph->size();
@@ -961,10 +975,12 @@ void MessageProcessor::call_RAY_MPI_TAG_ASK_EXTENSION(Message*message){
 	(*m_last_value)=-1;
 	m_verticesExtractor->showBuffers();
 
-	cout<<"Libs info"<<endl;
-	for(int i=0;i<m_parameters->getNumberOfLibraries();i++){
-		for(int j=0;j<m_parameters->getLibraryPeaks(i);j++){
-			cout<<"Lib "<<i<<" Peak "<<j<<" "<<m_parameters->getLibraryAverageLength(i,j)<<" "<<m_parameters->getLibraryStandardDeviation(i,j)<<endl;
+	if(m_parameters->hasOption("show:libs")){
+		cout<<"Libs info"<<endl;
+		for(int i=0;i<m_parameters->getNumberOfLibraries();i++){
+			for(int j=0;j<m_parameters->getLibraryPeaks(i);j++){
+				cout<<"Lib "<<i<<" Peak "<<j<<" "<<m_parameters->getLibraryAverageLength(i,j)<<" "<<m_parameters->getLibraryStandardDeviation(i,j)<<endl;
+			}
 		}
 	}
 }

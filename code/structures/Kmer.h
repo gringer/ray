@@ -99,6 +99,7 @@ using namespace std;
 
 class Kmer{
 	typedef ColorSpaceCodec CSC;
+	/** the actual array of uint64_t */
 	uint64_t m_u64[KMER_U64_ARRAY_SIZE];
 public:
 	//note: all constructors convert to colour-space
@@ -115,8 +116,6 @@ public:
 	void pack(uint64_t*messageBuffer,int*messagePosition);
 	void unpack(uint64_t*messageBuffer,int*messagePosition);
 	void unpack(vector<uint64_t>*messageBuffer,int*messagePosition);
-	uint64_t hash_function_1();
-	uint64_t hash_function_2();
 	string toBSString(int wordsize);
 	/*
 	 * transform a Kmer in a string
@@ -193,6 +192,11 @@ public:
 		return m_u64[arrayLocation];
 	}
 
+	/** hash 1 is used to distribute k-mers on MPI ranks */
+	uint64_t hash_function_1();
+
+	/** hash 2 is used for double hashing in the hash tables */
+	uint64_t hash_function_2();
 
 private:
 	INLINE
@@ -212,8 +216,6 @@ private:
 	}
 
 }ATTRIBUTE_PACKED;
-
-
 
 
 #endif

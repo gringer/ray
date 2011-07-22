@@ -112,30 +112,18 @@ void KmerAcademyBuilder::process(int*m_mode_send_vertices_sequence_id,
 		Kmer a(m_readSequence,p,wordSize);
 		if(a.isValid()){
 
-			/* TODO: _vertexRank (2 calls) calls complementVertex so there are 3 calls to complementVertex are done while 1 would suffice (Reported by David Eccles) */
-
-			/* TODO: actually, only the lowest k-mers need to be sent, the other is not processed anyway by the peer.
-				see MessageProcessor::call_RAY_MPI_TAG_KMER_ACADEMY_DATA */
-
-			int rankToFlush=0;
-
-			rankToFlush=m_parameters->_vertexRank(&a);
-			//TODO: raw bit access -- make sure this is processed correctly
-			for(int i=0;i<KMER_U64_ARRAY_SIZE;i++){
-				m_bufferedData.addAt(rankToFlush,a.getRawBits(i));
-			}
-
-			if(m_bufferedData.flush(rankToFlush,KMER_U64_ARRAY_SIZE,RAY_MPI_TAG_KMER_ACADEMY_DATA,m_outboxAllocator,m_outbox,rank,false)){
-				m_pendingMessages++;
-			}
-
 			// reverse complement
-			Kmer b=a.rComp(wordSize);
+			Kmer reverseComplementKmer=a.rComp(wordSize);
 
-			rankToFlush=m_parameters->_vertexRank(&b);
-			//TODO: raw bit access -- make sure this is processed correctly
+			//TODO: remove unnecessary copies
+			Kmer lowerKmer=a;
+			if(reverseComplementKmer<lowerKmer)
+				lowerKmer=reverseComplementKmer;
+
+			int rankToFlush=lowerKmer.hash_function_1()%m_parameters->getSize();
+			
 			for(int i=0;i<KMER_U64_ARRAY_SIZE;i++){
-				m_bufferedData.addAt(rankToFlush,b.getRawBits(i));
+				m_bufferedData.addAt(rankToFlush,lowerKmer.getRawBits(i));
 			}
 
 			if(m_bufferedData.flush(rankToFlush,KMER_U64_ARRAY_SIZE,RAY_MPI_TAG_KMER_ACADEMY_DATA,m_outboxAllocator,m_outbox,rank,false)){

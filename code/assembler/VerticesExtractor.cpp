@@ -115,6 +115,8 @@ void VerticesExtractor::process(int*m_mode_send_vertices_sequence_id,
 
 			int rankToFlush=0;
 
+			/* TODO: possibly don't flush k-mer that are not lower. not sure it that would work though. -Seb */
+
 			rankToFlush=m_parameters->_vertexRank(&a);
 			//TODO: make sure this is doing the right thing (copying flags, etc)
 			//      [same goes for all getRawBits accesses]

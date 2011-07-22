@@ -61,6 +61,9 @@ Parameters::Parameters(){
 	m_showEndingContext=false;
 	m_writeKmers=false;
 	m_showExtensionChoice=false;
+
+	/** use the new NovaEngine (TM) */
+	m_options.insert("use:NovaEngine");
 }
 
 bool Parameters::showExtensionChoice(){
@@ -115,6 +118,7 @@ void Parameters::parseCommands(){
 		cout<<"Ray command:"<<endl<<endl;
 
 		for(int i=0;i<(int)m_commands.size();i++){
+			m_options.insert(m_commands[i]);
 			if(i!=(int)m_commands.size()-1){
 				cout<<" "<<m_commands[i]<<" \\"<<endl;
 			}else{
@@ -900,6 +904,9 @@ int Parameters::getNumberOfLibraries(){
 
 uint64_t Parameters::getNumberOfSequences(int file){
 	#ifdef ASSERT
+	if(file>=(int)m_numberOfSequencesInFile.size())
+		cout<<"Error File= "<<file<<" Files: "<<m_numberOfSequencesInFile.size()<<endl;
+
 	assert(file<(int)m_numberOfSequencesInFile.size());
 	#endif
 	return m_numberOfSequencesInFile[file];
@@ -1259,3 +1266,6 @@ int Parameters::getLibraryPeaks(int library){
 	return m_libraryAverageLength[library].size();
 }
 
+bool Parameters::hasOption(string a){
+	return m_options.count(a)>0;
+}
