@@ -127,7 +127,7 @@ void KmerAcademyBuilder::process(int*m_mode_send_vertices_sequence_id,
 				m_pendingMessages++;
 			}
 		}
-
+		// finished with this read, onto the next one
 		(m_mode_send_vertices_sequence_id_position++);
 		if((m_mode_send_vertices_sequence_id_position)==lll){
 			(*m_mode_send_vertices_sequence_id)++;
