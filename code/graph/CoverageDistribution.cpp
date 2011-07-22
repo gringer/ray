@@ -80,7 +80,7 @@ CoverageDistribution::CoverageDistribution(map<int,uint64_t>*distributionOfCover
 	int largestPosition=0;
 	for(int i=0; i < (int)x.size(); i++){
 		//bool changed = false;
-		if((votes[i] > votes[largestPosition]) || (y[i] > y[largestPosition])){
+		if((votes[i] >= votes[largestPosition]) || (y[i] > y[largestPosition])){
 			largestPosition = i;
 			//changed = true;
 		}
@@ -88,14 +88,7 @@ CoverageDistribution::CoverageDistribution(map<int,uint64_t>*distributionOfCover
 		//		", vote = " << (int)votes[i] << (changed?"*":"") << endl;
 	}
 	
-	int minimumPosition=0;
-	for(int i = 0; i <= largestPosition; i++){
-		if(y[i] < y[minimumPosition]){
-			minimumPosition = i;
-		}
-	}
-
-	m_minimumCoverage=x[minimumPosition];
+	m_minimumCoverage=x[0];
 	m_peakCoverage=x[largestPosition];
 
 	m_repeatCoverage=2*m_peakCoverage;
