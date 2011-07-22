@@ -113,17 +113,14 @@ void KmerAcademyBuilder::process(int*m_mode_send_vertices_sequence_id,
 		if(a.isValid()){
 
 			// reverse complement
-			Kmer reverseComplementKmer=a.rComp(wordSize);
+			Kmer aRC=a.rComp(wordSize);
 
-			//TODO: remove unnecessary copies
-			Kmer lowerKmer=a;
-			if(reverseComplementKmer<lowerKmer)
-				lowerKmer=reverseComplementKmer;
+			bool aLower = a.isLower(aRC);
 
-			int rankToFlush=lowerKmer.hash_function_1()%m_parameters->getSize();
+			int rankToFlush=(aLower?a:aRC).hash_function_1()%m_parameters->getSize();
 			
 			for(int i=0;i<KMER_U64_ARRAY_SIZE;i++){
-				m_bufferedData.addAt(rankToFlush,lowerKmer.getRawBits(i));
+				m_bufferedData.addAt(rankToFlush,(aLower?a:aRC).getRawBits(i));
 			}
 
 			if(m_bufferedData.flush(rankToFlush,KMER_U64_ARRAY_SIZE,RAY_MPI_TAG_KMER_ACADEMY_DATA,m_outboxAllocator,m_outbox,rank,false)){
