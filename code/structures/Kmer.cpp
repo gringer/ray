@@ -589,7 +589,9 @@ bool Kmer::isEqual(Kmer*a){
 
 int Kmer::vertexRank(int arraySize,int wordSize){
 	Kmer b=rComp(wordSize);
-	if(isLower(&b))
-		b=*this;
-	return b.hash_function_1()%(arraySize);
+	if(isLower(&b)){
+		return b.hash_function_1()%(arraySize);
+	} else {
+		return hash_function_1()%(arraySize);
+	}
 }
