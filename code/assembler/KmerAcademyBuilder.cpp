@@ -115,7 +115,7 @@ void KmerAcademyBuilder::process(int*m_mode_send_vertices_sequence_id,
 			// reverse complement
 			Kmer aRC=a.rComp(wordSize);
 
-			bool aLower = a.isLower(aRC);
+			bool aLower = a.isLower(&aRC);
 
 			int rankToFlush=(aLower?a:aRC).hash_function_1()%m_parameters->getSize();
 			
