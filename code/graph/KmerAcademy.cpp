@@ -56,7 +56,7 @@ uint64_t KmerAcademy::size(){
 KmerCandidate*KmerAcademy::find(Kmer*key){
 	Kmer lowerKey=key->rComp(m_parameters->getWordSize());
 	if(key->isLower(&lowerKey)){
-		lowerKey=*key;
+		return m_hashTable.find(key);
 	}
 	return m_hashTable.find(&lowerKey);
 }
