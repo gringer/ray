@@ -83,7 +83,7 @@ OPTIMIZE = y
 
 # profiling
 GPROF = n
-DEBUG = n
+DEBUG = y
 
 ifeq ($(GPROF),y)
 	OPTIMIZE = n
@@ -91,8 +91,6 @@ ifeq ($(GPROF),y)
 endif
 
 ifeq ($(DEBUG),y)
-	OPTIMIZE = n
-	FORCE_PACKING = n
 	ASSERT = y 
 endif
 
