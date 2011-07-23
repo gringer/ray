@@ -543,11 +543,11 @@ bool Kmer::firstBaseKnown() const{
 
 int Kmer::compare(const Kmer& b) const{
 	// compare sequence at all known locations
-	bool anyFirstBaseUnknown = firstBaseKnown() || b.firstBaseKnown();
+	bool allFirstBasesKnown = firstBaseKnown() && b.firstBaseKnown();
 	for(int i=0;i<KMER_U64_ARRAY_SIZE;i++){
 		uint64_t checkA = m_u64[i];
 		uint64_t checkB = b.m_u64[i];
-		if(anyFirstBaseUnknown){
+		if(!allFirstBasesKnown){
 			if(i == 0){
 				// at least one of the first bases is unknown, so ignore first base for comparison
 				checkA &= KMER_CLEAR_FIRSTBASE; // clear unknown bit and first base
