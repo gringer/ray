@@ -33,6 +33,7 @@
 using namespace std;
 
 class ColorSpaceLoader{
+	typedef ColorSpaceCodec CSC;
 	enum FileType {UNKNOWN, FASTA, FASTQ, CSFASTA, CSFASTQ, INVALID};
 	ColorSpaceCodec m_decoder;
 	ifstream m_f;
