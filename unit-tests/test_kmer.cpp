@@ -12,8 +12,8 @@
 using namespace std;
 
 void test_addInEdge(){
-	string a="AGCAAGTTAGCAACATCATATGAGTGCAATCCTGTTGTAGGCTCATCTAAGACATAAATAGTT";
-	string b= "GCAAGTTAGCAACATCATATGAGTGCAATCCTGTTGTAGGCTCATCTAAGACATAAATAGTTT";
+	string a="AGCAAGTTAGCAACATCATATGAGTGCAATCCTGTTGTAGGCTCATCTAAGACATAATAGTT";
+	string b= "GCAAGTTAGCAACATCATATGAGTGCAATCCTGTTGTAGGCTCATCTAAGACATAATAGTTT";
 	int wordSize=a.length();
 
 	Kmer aKmer(a);
@@ -89,8 +89,8 @@ void test_addOutEdge(){
 }
 
 void test_addInEdge2(){
-	string a="AGCAAGTTAGCAACATCATATGAGTGCAATCCTGTTGTAGGCTCATCTAAGACATAAATAGTT";
-	string b= "GCAAGTTAGCAACATCATATGAGTGCAATCCTGTTGTAGGCTCATCTAAGACATAAATAGTTT";
+	string a="AGCAAGTTAGCAACATCATATGAGTGCAATCCTGTTGTAGGCTCATCTAAGACATAATAGTT";
+	string b= "GCAAGTTAGCAACATCATATGAGTGCAATCCTGTTGTAGGCTCATCTAAGACATAATAGTTT";
 	int wordSize=a.length();
 
 	Kmer aKmer(a);
@@ -346,6 +346,44 @@ void test_Ingoing(){
 	assert(actual==aKmer);
 }
 
+void test_Comparisons(){
+	string a="GACTTGATTAGCTAGCTAATCAAGTC"; // palindromic
+	string b="G2120123032323232303210212"; // colour-space equivalent
+	string c="C2120123032323232303210212"; // (different first base)
+	string d="N2120123032323232303210212"; // unknown first base
+	string e="N2120123032313232303210212"; // mismatch, unknown first base
+	string f="G2120123032313232303210212"; // non-palindromic, same as mismatch
+	int wordSize = a.length();
+	Kmer ka(a);
+	Kmer kb(b);
+	Kmer kc(c);
+	Kmer kd(d);
+	Kmer kdCopy(d);
+	Kmer ke(e);
+	Kmer kf(f);
+	// colour-space equivalent of base space should match
+	assert(ka == kb);
+	assert(kb != kc);
+	// base C = 0b01, base G = 0b10, so C < G
+	assert(kc < kb);
+	// colour-space equivalent of base space should match
+	assert(!ka.isLower(&kb));
+	// reverse complement of a palindromic k-mer is the same
+	assert(kb.rComp(wordSize) == kb);
+	// unknown first base is considered a match if sequence matches
+	assert(kc == kd);
+	// unknown first base should not match if sequence mismatch
+	assert(kc != ke);
+	// two unknowns should not match if sequence mismatch
+	assert(kd != ke);
+	// two unknowns should match if sequence is the same
+	assert(kd == kdCopy);
+	// non-palindromic should match unknown if sequence is the same
+	assert(ke == kf);
+	// non-palindromic should not match reverse complement
+	assert(kf.rComp(wordSize) != kf);
+}
+
 
 int main(int argc,char**argv){
 	string seq=argv[1];
@@ -423,6 +461,7 @@ int main(int argc,char**argv){
 
 	test_Ingoing();
 	test_out();
+	test_Comparisons();
 
 	if(MAXKMERLENGTH>32){
 		test_Ingoing_large();
