@@ -52,7 +52,7 @@ Kmer::Kmer(string inSequence, int pos, int wordSize, char strand){
 	bool firstBaseKnown = (!isCS || (CSC::bsChrToBS(lastBase) != 'N'));
 	/* if the input string (not the subsequence) starts in the middle of a
 	 * colour-space sequence (e.g. '00120231'), then it is necessary to insert a 'N' */
-	if(!firstBaseKnown && (CSC::csChrToInt(lastBase) > 3)){
+	if(!firstBaseKnown && (CSC::csChrToInt(lastBase) <= 3)){
 		inSequence.insert(0,1,'N');
 		lastBase = 'N';
 	}

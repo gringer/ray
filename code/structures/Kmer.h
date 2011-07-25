@@ -76,7 +76,7 @@ using namespace std;
 #define KMER_2BITMASK             (0b11)
 #define KMER_FIRSTBASE            (0b1100)
 #define KMER_FIRSTBASE_UNKNOWN_F  (0b11)
-#define KMER_CLEAR_FIRSTBASE      (~(KMER_FIRSTBASE))
+#define KMER_CLEAR_FIRSTBASE      (~(KMER_FIRSTBASE | KMER_FIRSTBASE_KNOWN))
 #define KMER_CLEAR_LASTBASE       (~((uint64_t)0b11 << 62))
 #define KMER_LASTU64_LOCATION     (KMER_U64_ARRAY_SIZE - 1)
 
