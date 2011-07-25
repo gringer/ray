@@ -41,6 +41,8 @@ Kmer::Kmer(string inSequence, int pos, int wordSize, char strand){
 	// sequence is greater than MAXKMERLENGTH
 	// so, limit range checking to that done in set/get Piece
 
+	// TODO: store only the lower of forward/RC, and change strand/direction flag appropriately
+
 	// insert unknown first base, if necessary
 	bool reverse = (strand == 'R')?true:false;
 	bool validSequence = true;
@@ -433,6 +435,7 @@ string Kmer::toBSString(int wordSize){
 /*
  * Return the reverse-complement of this Kmer. The reverse complement will
  * be returned as a colour-space Kmer.
+ * TODO: reverse complement should be constant time, or at most O(getNumberOfU64()), rather than O(wordSize)
  */
 
 Kmer Kmer::rComp(int wordSize){
