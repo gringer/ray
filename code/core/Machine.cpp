@@ -677,12 +677,11 @@ void Machine::call_RAY_MASTER_MODE_LOAD_CONFIG(){
 		return;
 	}
 
-	uint64_t*message=(uint64_t*)m_outboxAllocator.allocate(2*sizeof(uint64_t));
+	uint64_t*message=(uint64_t*)m_outboxAllocator.allocate(1*sizeof(uint64_t));
 	message[0]=m_parameters.getWordSize();
-	message[1]=m_parameters.getColorSpaceMode();
 
 	for(int i=0;i<getSize();i++){
-		Message aMessage(message,2,i,RAY_MPI_TAG_SET_WORD_SIZE,getRank());
+		Message aMessage(message,1,i,RAY_MPI_TAG_SET_WORD_SIZE,getRank());
 		m_outbox.push_back(aMessage);
 	}
 
@@ -1138,7 +1137,7 @@ void Machine::call_RAY_SLAVE_MODE_SEND_EXTENSION_DATA(){
 			continue;
 		}
 		total++;
-		string contig=convertToString(&(m_ed->m_EXTENSION_contigs[i]),m_parameters.getWordSize(),m_parameters.getColorSpaceMode());
+		string contig=convertToString(&(m_ed->m_EXTENSION_contigs[i]),m_parameters.getWordSize(),false);
 		
 		m_scaffolder.addContig(uniqueId,&(m_ed->m_EXTENSION_contigs[i]));
 

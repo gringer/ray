@@ -132,11 +132,11 @@ void MessageProcessor::call_RAY_MPI_TAG_GET_READ_MARKERS(Message*message){
 		outgoingMessage[outputPosition++]=readLength;
 		Kmer forwardMarker;
 		if(read->getForwardOffset()<=readLength-m_parameters->getWordSize()){
-			forwardMarker=read->getVertex(read->getForwardOffset(),m_parameters->getWordSize(),'F',m_parameters->getColorSpaceMode());
+			forwardMarker=read->getVertex(read->getForwardOffset(),m_parameters->getWordSize(),'F',true);
 		}
 		Kmer reverseMarker;
 		if(read->getReverseOffset()<=readLength-m_parameters->getWordSize()){
-			reverseMarker=read->getVertex(read->getReverseOffset(),m_parameters->getWordSize(),'R',m_parameters->getColorSpaceMode());
+			reverseMarker=read->getVertex(read->getReverseOffset(),m_parameters->getWordSize(),'R',true);
 		}
 		forwardMarker.pack(outgoingMessage,&outputPosition);
 		reverseMarker.pack(outgoingMessage,&outputPosition);
@@ -1090,7 +1090,7 @@ void MessageProcessor::call_RAY_MPI_TAG_ASK_READ_VERTEX_AT_POSITION(Message*mess
 	int source=message->getSource();
 	uint64_t*incoming=(uint64_t*)buffer;
 	char strand=incoming[2];
-	Kmer vertex=(*m_myReads)[incoming[0]]->getVertex(incoming[1],(*m_wordSize),strand,m_parameters->getColorSpaceMode());
+	Kmer vertex=(*m_myReads)[incoming[0]]->getVertex(incoming[1],(*m_wordSize),strand,true);
 	uint64_t*message2=(uint64_t*)m_outboxAllocator->allocate(1*sizeof(uint64_t));
 	int bufferPosition=0;
 	vertex.pack(message2,&bufferPosition);
@@ -1839,7 +1839,8 @@ void MessageProcessor::call_RAY_MPI_TAG_REQUEST_READ_SEQUENCE_REPLY(Message*mess
 	int length=incoming[4];
 	uint8_t*sequence=(uint8_t*)(incoming+5);
 	Read tmp(sequence,length);
-	seedExtender->m_receivedString=tmp.getSeq(m_parameters->getColorSpaceMode(),false);
+	//TODO: make sure returning a colour-space string is appropriate here
+	seedExtender->m_receivedString=tmp.getSeq(true,false);
 	seedExtender->m_sequenceReceived=true;
 }
 

@@ -84,7 +84,6 @@ class Parameters{
 	set<int> m_rightFiles;
 	set<int> m_interleavedFiles;
 	int m_seedCoverage;
-	bool m_colorSpaceMode;
 	string m_input;
 	vector<string> m_commands;
 	map<int,map<int,int> >  m_observedDistances;
@@ -114,7 +113,6 @@ public:
 	int getLibraryStandardDeviation(int i,int peak);
 	bool isLeftFile(int i);
 	bool isRightFile(int i);
-	bool getColorSpaceMode();
 	bool useAmos();
 	string getInputFile();
 	string getAmosFile();
