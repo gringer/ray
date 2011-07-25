@@ -47,10 +47,17 @@ CoverageDistribution::CoverageDistribution(map<int,uint64_t>*distributionOfCover
 
 	vector<int> x;
 	vector<uint64_t> y;
+	uint64_t lastY = 0;
+	bool slidePassed = false;
+
 	for(map<int,uint64_t>::iterator i=distributionOfCoverage->begin();i!=distributionOfCoverage->end();i++){
 		int tx = i->first;
 		uint64_t ty = i->second;
-		if((tx >= minimumX) && (tx <= maximumX)){
+		if (!slidePassed && (lastY != 0) && (lastY < ty)){
+			slidePassed = true;
+		}
+		lastY = ty;
+		if((tx >= minimumX) && (tx <= maximumX) && slidePassed){
 			if((tx < safeThreshold) || (ty >= minimumY2)){
 				x.push_back(tx);
 				y.push_back(ty);
@@ -80,7 +87,7 @@ CoverageDistribution::CoverageDistribution(map<int,uint64_t>*distributionOfCover
 	int largestPosition=0;
 	for(int i=0; i < (int)x.size(); i++){
 		//bool changed = false;
-		if((votes[i] >= votes[largestPosition]) || (y[i] > y[largestPosition])){
+		if((votes[i] > votes[largestPosition]) || (y[i] > y[largestPosition])){
 			largestPosition = i;
 			//changed = true;
 		}
@@ -88,7 +95,7 @@ CoverageDistribution::CoverageDistribution(map<int,uint64_t>*distributionOfCover
 		//		", vote = " << (int)votes[i] << (changed?"*":"") << endl;
 	}
 	
-	m_minimumCoverage=x[0];
+	m_minimumCoverage= distributionOfCoverage->begin()->first;
 	m_peakCoverage=x[largestPosition];
 
 	m_repeatCoverage=2*m_peakCoverage;
