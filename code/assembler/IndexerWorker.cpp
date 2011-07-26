@@ -38,7 +38,7 @@ void IndexerWorker::constructor(int sequenceId,const char* sequence,Parameters*p
 	m_reverseIndexed=false;
 	m_position=0;
 	m_coverageRequested=false;
-	m_theLength=strlen(m_sequence);
+	m_theLength=strlen(m_sequence); // not sequence, because sequence could be longer than m_sequence
 	m_vertexIsDone=false;
 	m_vertexInitiated=false;
 	m_fetchedCoverageValues=false;

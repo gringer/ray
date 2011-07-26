@@ -158,7 +158,6 @@ bool SequencesLoader::writeSequencesToAMOSFile(int rank,int size,
 			for(uint64_t i=0;i<m_loader.size();i++){
 				uint64_t iid=m_distribution_currentSequenceId;
 				m_distribution_currentSequenceId++;
-				//note: Amos cannot handle colour-space, so reads are written as base-space
 				string seq = m_loader.at(i)->getSeq(false,false);
 				#ifdef ASSERT
 				assert(seq.length()>0);
@@ -166,7 +165,7 @@ bool SequencesLoader::writeSequencesToAMOSFile(int rank,int size,
 				string qlt(seq);
 				// spec: https://sourceforge.net/apps/mediawiki/amos/index.php?title=Message_Types#Sequence_t_:_Universal_t
 				for(int j=0;j<(int)qlt.length();j++){
-					qlt.at(j)='D';
+					qlt[j]='D';
 				}
 				fprintf(fp,"{RED\niid:%lu\neid:%lu\nseq:\n%s\n.\nqlt:\n%s\n.\n}\n",iid+1,iid+1,seq.c_str(),qlt.c_str());
 			}

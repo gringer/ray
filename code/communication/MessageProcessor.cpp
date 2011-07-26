@@ -689,8 +689,7 @@ void MessageProcessor::call_RAY_MPI_TAG_START_SEEDING(Message*message){
 }
 
 void MessageProcessor::call_RAY_MPI_TAG_GET_COVERAGE_AND_MARK(Message*message){
-	void*buffer=message->getBuffer();
-	uint64_t*incoming=(uint64_t*)buffer;
+	uint64_t*incoming=(uint64_t*)message->getBuffer();
 	uint64_t*message2=(uint64_t*)m_outboxAllocator->allocate(2*sizeof(uint64_t));
 	Kmer vertex;
 	int bufferPosition=0;
@@ -703,7 +702,7 @@ void MessageProcessor::call_RAY_MPI_TAG_GET_COVERAGE_AND_MARK(Message*message){
 	message2[0]=coverage;
 	message2[1]=node->getEdges(&vertex);
 	Kmer rc=vertex.rComp(m_parameters->getWordSize());
-	bool lower=vertex.isLower(&rc);
+	bool lower=vertex<rc;
 	uint64_t wave=incoming[bufferPosition++];
 	int progression=incoming[bufferPosition++];
 	// mark direction in the graph
@@ -1839,8 +1838,7 @@ void MessageProcessor::call_RAY_MPI_TAG_REQUEST_READ_SEQUENCE_REPLY(Message*mess
 	int length=incoming[4];
 	uint8_t*sequence=(uint8_t*)(incoming+5);
 	Read tmp(sequence,length);
-	//TODO: make sure returning a colour-space string is appropriate here
-	seedExtender->m_receivedString=tmp.getSeq(true,false);
+	seedExtender->m_receivedString=tmp.getSeq(false,false);
 	seedExtender->m_sequenceReceived=true;
 }
 

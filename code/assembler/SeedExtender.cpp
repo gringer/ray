@@ -1030,7 +1030,6 @@ BubbleData*bubbleData,int minimumCoverage,OpenAssemblerChooser*oa,int wordSize,v
 					//cout<<"Adding read "<<uniqueId<<" at "<<position<<endl;
 					m_matesToMeet.erase(uniqueId);
 					ExtensionElement*element=ed->addUsedRead(uniqueId);
-					//TODO: change so m_receivedString can be colour-space with starting base
 					element->setSequence(m_receivedString,ed->getAllocator());
 					element->setStartingPosition(startPosition);
 					element->setStrand(annotation.getStrand());

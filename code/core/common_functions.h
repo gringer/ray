@@ -51,16 +51,15 @@ string reverseComplement(string a,char*rev);
 uint8_t charToCode(char a);
 
 /*
- * transform a encoded nucleotide in a char
- */
-char codeToChar(uint8_t a,bool color);
-
-
-/*
- * verify that x has only A,T,C, and G 
+ * verify that x has only A,T,C, and G
  * (or 0,2,3, and 3 for colour-space)
  */
 bool isValidDNA(string x);
+
+/*
+ * transform a encoded nucleotide in a char
+ */
+char codeToChar(uint8_t a,bool color);
 
 /*
  * add line breaks to a string

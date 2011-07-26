@@ -77,15 +77,15 @@ void CoverageGatherer::writeKmers(){
 		#ifdef ASSERT
 		n++;
 		#endif
-		string kmerCSSequence=key.toString(m_wordSize, true);
-		string kmerBSSequence=key.toBSString(m_wordSize);
+		string kmerSequence=key.toBSString(m_wordSize);
 		vector<Kmer> parents=node->getIngoingEdges(&key,m_wordSize);
 		vector<Kmer> children=node->getOutgoingEdges(&key,m_wordSize);
-		fprintf(kmerFile,"%s/%s;%i;",kmerCSSequence.c_str(),kmerBSSequence.c_str(),coverage);
+		fprintf(kmerFile,"%s;%i;",kmerSequence.c_str(),coverage);
 		for(int i=0;i<(int)parents.size();i++){
 			char edge=parents[i].getFirstSymbol(false);
 			if(i!=0)
 				fprintf(kmerFile," ");
+
 			fprintf(kmerFile,"%c",edge);
 		}
 		fprintf(kmerFile,";");

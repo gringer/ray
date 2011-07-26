@@ -74,7 +74,6 @@ map<Kmer ,int>*coverages){
 		for(int j=0;j<(int)trees->at(i).size();j+=2){
 			Kmer a=trees->at(i).at(j+0);
 			Kmer b=trees->at(i).at(j+1);
-			//TODO: get this working with colour-space
 			string as=a.toBSString(m_wordSize);
 			string bs=b.toBSString(m_wordSize);
 			assert(as.substr(1,m_wordSize-1)==bs.substr(0,m_wordSize-1));

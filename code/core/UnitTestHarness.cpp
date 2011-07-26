@@ -2,7 +2,7 @@
  * UnitTestHarness.cpp
  *
  *  Created on: 29/06/2011
- *      Author: bioinf
+ *      Author: David Eccles (gringer) <david.eccles@mpi-muenster.mpg.de>
  */
 
 #include <string>

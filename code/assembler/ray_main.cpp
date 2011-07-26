@@ -24,9 +24,10 @@
 #include <stdlib.h>
 using namespace std;
 
-int main(int argc,char*argv[]){
-	Machine m(argc,argv);
-	m.start();
+int main(int argc,char**argv){
+	Machine*m=new Machine(argc,argv);
+	m->start();
+	delete(m);
 	return EXIT_SUCCESS;
 }
 

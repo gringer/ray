@@ -25,7 +25,6 @@
 #include <assert.h>
 #include <vector>
 #include <string>
-#include <stdint.h>
 #include <core/common_functions.h>
 #include <format/ColorSpaceCodec.h>
 #include <cryptography/crypto.h>

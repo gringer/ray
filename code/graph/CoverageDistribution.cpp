@@ -28,6 +28,7 @@
 #endif
 using namespace std;
 
+
 CoverageDistribution::CoverageDistribution(map<int,uint64_t>*distributionOfCoverage,string*file){
 	if(file!=NULL){
 		ofstream f;
