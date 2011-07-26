@@ -729,7 +729,7 @@ void MessageProcessor::call_RAY_MPI_TAG_REQUEST_VERTEX_COVERAGE(Message*message)
 		vertex.unpack(incoming,&bufferPosition);
 
 		//TODO: why is this here?
-		//string kmerStr=vertex.idToWord(m_parameters->getWordSize(),m_parameters->getColorSpaceMode());
+		//string kmerStr=vertex.toBSString(m_parameters->getWordSize());
 		Vertex*node=m_subgraph->find(&vertex);
 		int coverage=1;
 		if(node!=NULL)
