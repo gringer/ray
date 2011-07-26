@@ -132,11 +132,11 @@ void MessageProcessor::call_RAY_MPI_TAG_GET_READ_MARKERS(Message*message){
 		outgoingMessage[outputPosition++]=readLength;
 		Kmer forwardMarker;
 		if(read->getForwardOffset()<=readLength-m_parameters->getWordSize()){
-			forwardMarker=read->getVertex(read->getForwardOffset(),m_parameters->getWordSize(),'F',true);
+			forwardMarker=read->getVertex(read->getForwardOffset(),m_parameters->getWordSize(),'F',false);
 		}
 		Kmer reverseMarker;
 		if(read->getReverseOffset()<=readLength-m_parameters->getWordSize()){
-			reverseMarker=read->getVertex(read->getReverseOffset(),m_parameters->getWordSize(),'R',true);
+			reverseMarker=read->getVertex(read->getReverseOffset(),m_parameters->getWordSize(),'R',false);
 		}
 		forwardMarker.pack(outgoingMessage,&outputPosition);
 		reverseMarker.pack(outgoingMessage,&outputPosition);
@@ -377,7 +377,7 @@ void MessageProcessor::call_RAY_MPI_TAG_VERTEX_READS_FROM_LIST(Message*message){
 	Kmer vertex(incoming);
 	Kmer complement=vertex.rComp(m_parameters->getWordSize());
 	int numberOfMates=incoming[KMER_U64_ARRAY_SIZE+1];
-	bool lower=vertex.isLower(&complement);
+	bool lower=vertex<complement;
 	ReadAnnotation*e=(ReadAnnotation*)incoming[KMER_U64_ARRAY_SIZE+0];
 	#ifdef ASSERT
 	assert(e!=NULL);
@@ -469,7 +469,7 @@ void MessageProcessor::call_RAY_MPI_TAG_VERTICES_DATA(Message*message){
 		if(m_subgraph->inserted()){
 			tmp->constructor(); 
 		}
-		tmp->incrementCoverage(&l);
+		tmp->setCoverage(&l,tmp->getCoverage(&l)+1);
 	}
 	Message aMessage(NULL,0,message->getSource(),RAY_MPI_TAG_VERTICES_DATA_REPLY,m_rank);
 	m_outbox->push_back(aMessage);
