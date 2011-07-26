@@ -79,7 +79,7 @@ string addLineBreaks(string dna,int columns){
 	return output.str();
 }
 
-string convertToString(vector<Kmer>*b,int m_wordSize,bool color){
+string convertToString(vector<Kmer>*b,int m_wordSize){
 	ostringstream a;
 	#ifdef USE_DISTANT_SEGMENTS_GRAPH
 	//
@@ -88,10 +88,9 @@ string convertToString(vector<Kmer>*b,int m_wordSize,bool color){
 	//  TTAATT
 	//  the first vertex can not fill in the first delta letter alone, it needs help.
 	for(int p=0;p<m_wordSize;p++){
-		a<<(b->at(p)).getFirstSymbol(color);
+		a<<(b->at(p)).getFirstSymbol(false);
 	}
 	#else
-	 //TODO: output in base-space for now, because there may be scaffolder problems otherwise
 	a<<((*b)[0]).toBSString(m_wordSize);
 	#endif
 	for(int j=1;j<(int)(*b).size();j++){

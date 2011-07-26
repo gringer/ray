@@ -1137,7 +1137,7 @@ void Machine::call_RAY_SLAVE_MODE_SEND_EXTENSION_DATA(){
 			continue;
 		}
 		total++;
-		string contig=convertToString(&(m_ed->m_EXTENSION_contigs[i]),m_parameters.getWordSize(),false);
+		string contig=convertToString(&(m_ed->m_EXTENSION_contigs[i]),m_parameters.getWordSize());
 		
 		m_scaffolder.addContig(uniqueId,&(m_ed->m_EXTENSION_contigs[i]));
 

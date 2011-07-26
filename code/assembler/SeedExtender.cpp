@@ -79,7 +79,7 @@ int minimumCoverage,OpenAssemblerChooser*oa,bool*edgesReceived,int*m_mode){
 				f<<">RayExtension-"<<id<<endl;
 
 				f<<addLineBreaks(convertToString(&(ed->m_EXTENSION_contigs.at(i)),
-					m_parameters->getWordSize(),false),
+					m_parameters->getWordSize()),
 					m_parameters->getColumns());
 			}
 			f.close();

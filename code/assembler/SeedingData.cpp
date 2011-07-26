@@ -189,7 +189,7 @@ void SeedingData::computeSeeds(){
 				f<<">RaySeed-"<<id<<endl;
 
 				f<<addLineBreaks(convertToString(&(m_SEEDING_seeds[i]),
-					m_parameters->getWordSize(),m_parameters->getColorSpaceMode()),
+					m_parameters->getWordSize()),
 					m_parameters->getColumns());
 			}
 			f.close();

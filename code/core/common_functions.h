@@ -67,9 +67,7 @@ bool isValidDNA(string x);
  */
 string addLineBreaks(string sequence,int a);
 
-string convertToString(vector<Kmer>*b,int m_wordSize,bool color);
-
-Kmer kmerAtPosition(const char*string,int pos,int w,char strand,bool color);
+string convertToString(vector<Kmer>*b,int m_wordSize);
 
 int roundNumber(int number,int alignment);
 
