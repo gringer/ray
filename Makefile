@@ -56,7 +56,7 @@ FORCE_PACKING = n
 # compile assertions
 # Ray may be faster when ASSERT=n
 # y/n
-ASSERT = n
+ASSERT = y
 
 # Create VirtualNextGenSequencer
 # needs boost library
@@ -91,7 +91,7 @@ ifeq ($(GPROF),y)
 endif
 
 ifeq ($(DEBUG),y)
-	ASSERT = y 
+	ASSERT = y
 endif
 
 PEDANTIC = n
