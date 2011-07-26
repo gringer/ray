@@ -591,9 +591,9 @@ bool Kmer::isEqual(Kmer*a){
 
 int Kmer::vertexRank(int arraySize,int wordSize){
 	Kmer b=rComp(wordSize);
+	//TODO: work out why the copy is necessary here
 	if(isLower(&b)){
-		return b.hash_function_1()%(arraySize);
-	} else {
-		return hash_function_1()%(arraySize);
+		b=*this;
 	}
+	return b.hash_function_1()%(arraySize);
 }
