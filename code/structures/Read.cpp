@@ -96,7 +96,7 @@ Read::Read(const Read& b,MyAllocator*seqMyAllocator){
 	m_forwardOffset = b.m_forwardOffset;
 	m_reverseOffset = b.m_reverseOffset;
 
-	m_pairedRead = b.m_pairedRead; //TODO: is it safe to do this?
+	m_pairedRead = b.m_pairedRead;
 
 	// copy over the sequence data, allocating new bytes as necessary
 	int requiredBytes = getRequiredBytes();
@@ -192,10 +192,7 @@ Read::Read(string sequenceIn,MyAllocator*seqMyAllocator,bool trimFlag){
 	}
 }
 
-string Read::getSeq(bool color,bool doubleEncoding) const{
-	if(!color && doubleEncoding){
-		cout << "warning: useless double-encoding requested for base-space output... ";
-	}
+string Read::getSeq(bool color) const{
 	string out("");
 	out.reserve(m_length);
 	for(int position=0;position<m_length;position++){
@@ -206,7 +203,7 @@ string Read::getSeq(bool color,bool doubleEncoding) const{
 		if(position == 0){
 			out += m_firstBaseKnown?CSC::bsIntToBS(code):'N';
 		} else {
-			out += CSC::csIntToCS(code, doubleEncoding);
+			out += CSC::csIntToCS(code);
 		}
 	}
 	if(!color) {
@@ -227,7 +224,7 @@ int Read::length()const{
  */
 Kmer Read::getVertex(int pos,int w,char strand,bool color) const {
 	//TODO: possibly do a copy of bytes, without the intermediate string
-	return Kmer(getSeq(color,false),pos,w,strand);
+	return Kmer(getSeq(color),pos,w,strand);
 }
 
 bool Read::hasPairedRead()const{
@@ -303,29 +300,23 @@ bool Read::check(){
 	// replacing 'N' with 'A' or '0'.
 	UnitTestHarness uth("Read");
 	string sequence;
-	uth.preProcessTest("colour-space encoding converted to double-encoded base-space");
-	sequence = colorSpaceRead1.getSeq(false,true); // this may produce a warning
-	uth.compareOutput(sequence, "TAGGGATATCTTTTTAATGCCGAAATAAGGGCTGATAACCGAGATTATTTC");
 	uth.preProcessTest("colour-space encoding converted to colour-space");
-	sequence = colorSpaceRead1.getSeq(true,false);
+	sequence = colorSpaceRead1.getSeq(true);
 	uth.compareOutput(sequence, "T32002333220000303130320033020032123301032223033002");
-	uth.preProcessTest("colour-space encoding converted to double-encoded colour-space");
-	sequence = colorSpaceRead1.getSeq(true,true);
-	uth.compareOutput(sequence, "TTGAAGTTTGGAAAATATCTATGAATTAGAATGCGTTACATGGGTATTAAG");
 	uth.preProcessTest("colour-space encoding with misreads converted to base-space");
-	sequence = colorSpaceRead2.getSeq(false,false);
+	sequence = colorSpaceRead2.getSeq(false);
 	uth.compareOutput(sequence, "TAGGGATATCTTTTTAATGCCGAAATAAAAATCAGCGGTTAGAGCCG");
 	uth.preProcessTest("colour-space encoding with misreads converted to colour-space");
-	sequence = colorSpaceRead2.getSeq(true,false);
+	sequence = colorSpaceRead2.getSeq(true);
 	uth.compareOutput(sequence, "T3200233322000030313032003300003212330103222303");
 	uth.preProcessTest("base-space encoding converted to colour-space");
-	sequence = baseSpaceRead1.getSeq(true,false);
+	sequence = baseSpaceRead1.getSeq(true);
 	uth.compareOutput(sequence, "A11101133100033300132201232202002130");
 	uth.preProcessTest("base-space encoding with misreads converted to colour-space");
-	sequence = baseSpaceRead2.getSeq(true,false);
+	sequence = baseSpaceRead2.getSeq(true);
 	uth.compareOutput(sequence, "A1001330000333000122012322000001");
 	uth.preProcessTest("base-space encoding with misreads converted to base-space");
-	sequence = baseSpaceRead2.getSeq(false,false);
+	sequence = baseSpaceRead2.getSeq(false);
 	uth.compareOutput(sequence, "ACCCATAAAAATATTTTGAGGTCGAGGGGGGT");
 	return uth.getSuccess();
 }

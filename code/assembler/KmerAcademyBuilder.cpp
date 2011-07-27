@@ -91,7 +91,7 @@ void KmerAcademyBuilder::process(int*m_mode_send_vertices_sequence_id,
 		}
 	}else{
 		if(m_mode_send_vertices_sequence_id_position==0){
-			m_readSequence = (*m_myReads)[(*m_mode_send_vertices_sequence_id)]->getSeq(true,false);
+			m_readSequence = (*m_myReads)[(*m_mode_send_vertices_sequence_id)]->getSeq(true);
 		
 		}
 		int len=m_readSequence.length();

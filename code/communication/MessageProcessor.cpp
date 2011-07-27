@@ -1838,7 +1838,7 @@ void MessageProcessor::call_RAY_MPI_TAG_REQUEST_READ_SEQUENCE_REPLY(Message*mess
 	int length=incoming[4];
 	uint8_t*sequence=(uint8_t*)(incoming+5);
 	Read tmp(sequence,length);
-	seedExtender->m_receivedString=tmp.getSeq(false,false);
+	seedExtender->m_receivedString=tmp.getSeq(false);
 	seedExtender->m_sequenceReceived=true;
 }
 

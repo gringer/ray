@@ -67,7 +67,7 @@ public:
 	Read(uint8_t*seq,int length,bool color = false, bool firstBaseKnown = true);
 	Read(const Read& b,MyAllocator*seqMyAllocator);
 	Read(string sequenceIn,MyAllocator*seqMyAllocator,bool trim);
-	string getSeq(bool color,bool doubleEncoding)const;
+	string getSeq(bool color)const;
 	int length()const;
 	Kmer getVertex(int pos,int w,char strand,bool color)const;
 	bool hasPairedRead()const;

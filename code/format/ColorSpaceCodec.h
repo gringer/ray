@@ -37,7 +37,7 @@ class ColorSpaceCodec{
 	static char csChrToDE(char tChr);
 	static char bsChrToBS(char tChr);
 	static char bsIntToBS(uint8_t tInt);
-	static char csIntToCS(uint8_t tInt, bool doubleEncoding);
+	static char csIntToCS(uint8_t tInt, bool doubleEncoding = false);
 	static int complement(int codeB);
 	static bool isColorSpace(string sequence);
 	static string transformCStoDE(string csInput);

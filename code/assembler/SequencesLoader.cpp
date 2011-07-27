@@ -158,7 +158,7 @@ bool SequencesLoader::writeSequencesToAMOSFile(int rank,int size,
 			for(uint64_t i=0;i<m_loader.size();i++){
 				uint64_t iid=m_distribution_currentSequenceId;
 				m_distribution_currentSequenceId++;
-				string seq = m_loader.at(i)->getSeq(false,false);
+				string seq = m_loader.at(i)->getSeq(false);
 				#ifdef ASSERT
 				assert(seq.length()>0);
 				#endif

@@ -907,7 +907,7 @@ BubbleData*bubbleData,int minimumCoverage,OpenAssemblerChooser*oa,int wordSize,v
 				#ifdef ASSERT
 				assert(node!=NULL);
 				#endif
-				m_receivedString=node->getValue()->getSeq(false,false);
+				m_receivedString=node->getValue()->getSeq(false);
 				PairedRead*pr=node->getValue()->getPairedRead();
 
 				PairedRead dummy;
