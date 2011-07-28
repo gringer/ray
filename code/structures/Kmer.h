@@ -65,19 +65,15 @@ using namespace std;
 //#define KMER_COLORSPACE           (0b01)
 // piece 0 flags, piece 1 firstBase...
 // colour-space sequence begins from piece 2
-#define KMER_FIRSTBASE_LOCATION   (1)
-#define KMER_LASTBASE_LOCATION    (KMER_MAX_PIECES + 1)
-#define KMER_STARTPIECE           (2)
+#define KMER_STARTPIECE           (1)
 #define KMER_DIRECTION            (0b0)
 #define KMER_FORWARD_DIRECTION    (0b0)
 #define KMER_REVERSE_DIRECTION    (0b1)
-#define KMER_FIRSTBASE_KNOWN      (0b10)
-#define KMER_FLAGS                (0b11)
-#define KMER_2BITMASK             (0b11)
-#define KMER_FIRSTBASE            (0b1100)
-#define KMER_FIRSTBASE_UNKNOWN_F  (0b11)
-#define KMER_CLEAR_FIRSTBASE      (~(KMER_FIRSTBASE | KMER_FIRSTBASE_KNOWN))
-#define KMER_CLEAR_LASTBASE       (~((uint64_t)0b11 << 62))
+#define KMER_VALID                (0b10)
+#define KMER_VALID_MASK           (0b10)
+#define KMER_FLAGS_MASK           (0b11)
+#define KMER_2BIT_MASK            (0b11)
+#define KMER_CLEAR_FLAGS          (~((uint64_t)0b11))
 #define KMER_LASTU64_LOCATION     (KMER_U64_ARRAY_SIZE - 1)
 
 /**
@@ -86,15 +82,10 @@ using namespace std;
  * when the code is stable, this could be a mix of u64, u32 and u16 and u8
  * while maintaining the same interface, that are the two functions.
  *
- * Kmer format
+ * k-mer format
  * bit 0: direction (0: forward, 1: reverse) -- always 0 for now
- * bit 1: first base known (1: known first base, 0: unknown first base)
- * bit 2-3: first base (A=0b00,C=0b01,G=0b10,T=0b11)
- *        Note: if first-base is unknown, this should be 3 (0b11)
- * bit 4 onwards: remaining sequence, 2 bits per base/colour
- * last 2 bits: last base (in colour-space)
- *        Note: if first-base is unknown, this should be 3 (0b11)
- *
+ * bit 1: validity (1: valid k-mer, 0: invalid)
+ * bit 2 onwards: remaining sequence, 2 bits per base (in base-space)
  */
 
 class Kmer{
@@ -138,15 +129,13 @@ public:
 	 */
 	vector<Kmer> getIngoingEdges(uint8_t edges,int wordSize);
 	Kmer& operator=(const Kmer&b);
-	bool isColorSpace() const;
-	bool firstBaseKnown() const;
 	bool operator<(const Kmer&b)const;
 	bool operator!=(const Kmer&b)const;
 	bool operator==(const Kmer&b)const;
 
 	INLINE
 	void clear(){
-		for(int i=0;i<getNumberOfU64();i++){
+		for(int i=0;i<KMER_U64_ARRAY_SIZE;i++){
 			m_u64[i]=0;
 		}
 	}
@@ -162,7 +151,7 @@ public:
 		// add in some range checking
 		if(arrayPos < KMER_U64_ARRAY_SIZE){
 			// note: cast to uint64_t is necessary to make shift work correctly
-			m_u64[arrayPos] &= ~((uint64_t)KMER_2BITMASK << bitLocation); // clear previous set bits
+			m_u64[arrayPos] &= ~((uint64_t)KMER_2BIT_MASK << bitLocation); // clear previous set bits
 			m_u64[arrayPos] |= ((uint64_t)code << bitLocation); // set new bits
 		}
 	}
@@ -175,7 +164,7 @@ public:
 		assert(arrayPos < KMER_U64_ARRAY_SIZE);
 		#endif
 		if(arrayPos < KMER_U64_ARRAY_SIZE){
-			int code = ((m_u64[arrayPos] >> bitLocation) & KMER_2BITMASK);
+			int code = ((m_u64[arrayPos] >> bitLocation) & KMER_2BIT_MASK);
 			return(code); // retrieve bits from position
 		} else {
 			//cout << "error: attempt to access out of array bounds" << endl;
@@ -197,23 +186,6 @@ public:
 
 	/** hash 2 is used for double hashing in the hash tables */
 	uint64_t hash_function_2();
-
-private:
-	INLINE
-	void setU64(int i,uint64_t b){
-		#ifdef ASSERT
-		assert(i<KMER_U64_ARRAY_SIZE);
-		#endif
-		m_u64[i]=b;
-	}
-
-	INLINE
-	uint64_t getU64(int i) const{
-		#ifdef ASSERT
-		assert(i<KMER_U64_ARRAY_SIZE);
-		#endif
-		return m_u64[i];
-	}
 
 }ATTRIBUTE_PACKED;
 

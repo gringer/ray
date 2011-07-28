@@ -14,7 +14,7 @@ int main(int argc,char**argv){
 	loader.constructor("",false);
 	loader.load(file,false);
 	for(uint64_t i=0;i<loader.size();i++){
-		string read = loader.at(i)->getSeq(false,false);
+		string read = loader.at(i)->getSeq(false);
 		cout<<">"<<i<<endl<<read<<endl;
 	}
 	return 0;

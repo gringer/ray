@@ -45,9 +45,15 @@ Kmer::Kmer(string inSequence, int pos, int wordSize, char strand){
 	// insert unknown first base, if necessary
 	bool reverse = (strand == 'R')?true:false;
 	bool validSequence = true;
-	bool isCS = CSC::isColorSpace(inSequence);
-	// note: all sequences are stored internally as colour-space
-	// When storing colour-space, it is necessary to find the first base for the sub-sequence
+	/*
+	 * * all sequences are stored internally as base-space
+	 * * sequence.at(1) makes sure range checking happens
+	 * * it is assumed that any colour-space sequence will
+	 *   have a colour at its second position
+	 */
+	bool isCS = ((CSC::csChrToInt(inSequence.at(1)) != CSC::bsChrToInt(inSequence.at(1))));
+
+	// When loading from colour-space, it is necessary to find the first base for the sub-sequence
 	char lastBase = (inSequence.length()>0)?inSequence.at(0):'N';
 	// an unknown first base, or no first base
 	bool firstBaseKnown = (!isCS || (CSC::bsChrToBS(lastBase) != 'N'));
@@ -104,43 +110,41 @@ Kmer::Kmer(string inSequence, int pos, int wordSize, char strand){
 		lastBase = complementNucleotide(toupper(lastBase));
 	}
 	int lastBaseCode = CSC::bsChrToInt(lastBase);
-	int firstBaseCode = lastBaseCode;
 	for(int i = 1; i < wordSize; i++){
 		int nextCode = CSC::csChrToInt(inSequence.at(pos + i));
 		if(!isCS){ // map that base to colour-space
 			nextCode = CSC::mapBStoCS(lastBaseCode,nextCode);
 		}
-		if(nextCode > 3){ // uh oh... bad read
+		if(lastBaseCode > 3){ // uh oh... bad read
 			cout << "Fatal: bad sequence: position= " << pos+i << endl;
-			nextCode = 0;
+			lastBaseCode = 0;
 			validSequence = false; // invalidate sequence
 		}
-		// get next base-space code (for reverse-complement, if necessary)
-		lastBaseCode = CSC::mapCStoBS(lastBaseCode,nextCode);
 //		cout << "Last base code: " << CSC::bsIntToBS(lastBaseCode) << endl;
 		if(!reverse){
-			setPiece(i+1, nextCode);
+			setPiece(i, lastBaseCode);
 		} else {
-			setPiece((wordSize - (i - 1)), nextCode);
+			setPiece((wordSize - (i - 1)), lastBaseCode);
 		}
+		// get next base-space code
+		lastBaseCode = CSC::mapCStoBS(lastBaseCode,nextCode);
+	}
+	// add in final base
+	if(lastBaseCode > 3){
+		lastBaseCode = 0;
+		validSequence = false; // invalidate sequence
+	} else {
+		setPiece(wordSize, lastBaseCode);
 	}
 	if(!validSequence){
 		cout << "Fatal: invalid input sequence: " << inSequence << endl;
+		#ifdef ASSERT
+		assert(validSequence);
+		#endif
 		clear();
 	} else {
-		int flags = KMER_FORWARD_DIRECTION | (firstBaseKnown?KMER_FIRSTBASE_KNOWN:0);
+		int flags = KMER_FORWARD_DIRECTION | (validSequence?KMER_VALID:0);
 		setPiece(0,flags);
-		if(!firstBaseKnown){
-			setPiece(1,KMER_FIRSTBASE_UNKNOWN_F);
-		} else {
-			if(reverse){
-				setPiece(KMER_FIRSTBASE_LOCATION, lastBaseCode);
-				setPiece(KMER_LASTBASE_LOCATION, firstBaseCode);
-			} else {
-				setPiece(KMER_FIRSTBASE_LOCATION, firstBaseCode);
-				setPiece(KMER_LASTBASE_LOCATION, lastBaseCode);
-			}
-		}
 	}
 }
 
@@ -160,29 +164,23 @@ Kmer::Kmer(const Kmer& b){
 	for(int i=0;i<getNumberOfU64();i++){
 		m_u64[i] = b.m_u64[i];
 	}
-	//TODO: no validity check because EdgePurgeWorker calls this for a brand new Kmer on array access
+	//TODO: no validity check because EdgePurgeWorker calls this for a brand new k-mer on array access
 }
 
 Kmer::Kmer(){
 	clear();
-	// note: this k-mer is invalid , because the first base is unknown,
-	// but is not set to 11 [00 00 .. .. ..]
-}
+	// note: this k-mer is invalid, because the valid flag is not set [00 .. .. ..]
+}   //                                                                  *
 
 Kmer::~Kmer(){
 }
 
+/* check if the k-mer is valid
+ * [this should alert to failed k-mer construction]
+ */
 bool Kmer::isValid(){
-	// warn if first base is unknown and first base is not set to 3
-	// [this should alert to failed k-mer construction]
-	if((m_u64[0] & KMER_FIRSTBASE_KNOWN) == 0){
-		return((m_u64[0] & KMER_FIRSTBASE) == KMER_FIRSTBASE);
-	} else {
-		return true;
-	}
+	return((m_u64[0] & KMER_VALID_MASK) != 0);
 }
-
-
 
 int Kmer::getNumberOfU64(){
 	return KMER_U64_ARRAY_SIZE;
@@ -190,11 +188,9 @@ int Kmer::getNumberOfU64(){
 
 void Kmer::printPieces() const {
 	printf("[flags=%d]",getPiece(0));
-	printf("[%d]",getPiece(KMER_FIRSTBASE_LOCATION));
 	for(int i=KMER_STARTPIECE;i<MAXKMERLENGTH;i++){
 		printf("(%d)",getPiece(i));
 	}
-	printf("[%d]",getPiece(KMER_LASTBASE_LOCATION));
 	printf("\n");
 }
 
@@ -206,19 +202,11 @@ void Kmer::printPieces() const {
  *
  * This function generates a vector of all k-mers generated from inserting
  * bases/colours into the start of this k-mer (pushing a base off the end).
- *
- * If (for whatever reason) the first base is unknown in colour-space, this will
- * produce an invalid k-mer.
  */
 vector<Kmer> Kmer::getIngoingEdges(uint8_t edges,int wordSize){
 	vector<Kmer> inEdges;
 	Kmer kmerTemplate;
 	kmerTemplate.setPiece(0,getPiece(0)); // this copies the flags across
-	bool fbKnown = firstBaseKnown();
-	int firstBase = getPiece(KMER_FIRSTBASE_LOCATION);
-	int lastBase = getPiece(KMER_LASTBASE_LOCATION);
-	lastBase = CSC::revMapCStoBS(getPiece(wordSize),lastBase);
-	kmerTemplate.setPiece(KMER_LASTBASE_LOCATION,lastBase);
 	for(int i = KMER_STARTPIECE; i < (wordSize); i++){
 		// shift sequence 'up' one base/colour
 		int nextPiece = getPiece(i);
@@ -231,21 +219,8 @@ vector<Kmer> Kmer::getIngoingEdges(uint8_t edges,int wordSize){
 			// 	<< " (" << this->toBSString(wordSize) << ") -> ";
 			// copy from the template
 			Kmer kmerIn(kmerTemplate);
-			if(fbKnown){
-				// add the new edge to the start of the Kmer
-				kmerIn.setPiece(KMER_FIRSTBASE_LOCATION,code);
-			} else {
-				kmerIn.setPiece(KMER_FIRSTBASE_LOCATION,KMER_FIRSTBASE_UNKNOWN_F);
-			}
-			// recalculate the first colour-space code
-			int newCode = CSC::mapBStoCS(firstBase, code);
-			if(newCode <= 3){
-				kmerIn.setPiece(KMER_STARTPIECE,newCode);
-			} else {
-				fbKnown = false;
-				kmerIn.clear();
-			}
-			// cout << kmerIn.toString(wordSize, true) << endl;
+			// add the new edge to the start of the Kmer
+			kmerIn.setPiece(KMER_STARTPIECE,code);
 			// finally, send to vector
 			inEdges.push_back(kmerIn);
 		}
@@ -262,22 +237,15 @@ vector<Kmer> Kmer::getIngoingEdges(uint8_t edges,int wordSize){
  * This function generates a vector of all Kmers generated from inserting
  * bases/colours at the end of this Kmer (pushing a base off the start).
  *
- * This function is very similar to getIngoing edges:
+ * This function is very similar to getIngoing edges, except for these points:
  *   * sequence is shifted from (i+1) to (i), rather than (i) to (i+1)
  *   * outgoing edges are stored in upper 4 bits (so >> 4 prior to adding edges)
  *   * replacement piece is set is at wordSize, rather than sequence start
- *   * first base is recalculated by stepping one base forward
- *   * last base is necessary in order to calculate next colour
  */
 vector<Kmer> Kmer::getOutgoingEdges(uint8_t edges,int wordSize){
 	vector<Kmer> outEdges;
 	Kmer kmerTemplate;
 	kmerTemplate.setPiece(0,getPiece(0)); // this copies the flags across
-	bool fbKnown = firstBaseKnown();
-	int firstBase = getPiece(KMER_FIRSTBASE_LOCATION);
-	int lastBase = getPiece(KMER_LASTBASE_LOCATION);
-	firstBase = CSC::mapCStoBS(firstBase,getPiece(KMER_STARTPIECE));
-	kmerTemplate.setPiece(KMER_FIRSTBASE_LOCATION,firstBase);
 	for(int i = KMER_STARTPIECE; i < (wordSize); i++){
 		// shift sequence 'down' one base/colour
 		int nextPiece = getPiece(i+1);
@@ -293,21 +261,7 @@ vector<Kmer> Kmer::getOutgoingEdges(uint8_t edges,int wordSize){
 			// copy from the template
 			Kmer kmerOut(kmerTemplate);
 			// add the new edge to the end of the Kmer
-			if(!fbKnown){
-				kmerOut.setPiece(KMER_FIRSTBASE_LOCATION,KMER_FIRSTBASE_UNKNOWN_F);
-			} else {
-				kmerOut.setPiece(KMER_LASTBASE_LOCATION,code);
-			}
-			// recalculate the last colour-space code
-			int newCode = code;
-			newCode = CSC::mapBStoCS(lastBase,code);
-			if(newCode <= 3){
-				kmerOut.setPiece(wordSize,newCode);
-			} else {
-				fbKnown = false;
-				kmerOut.clear();
-			}
-			// cout << kmerOut.toString(wordSize, true) << endl;
+			kmerOut.setPiece(wordSize,code);
 			// finally, send to vector
 			outEdges.push_back(kmerOut);
 		}
@@ -320,26 +274,17 @@ uint8_t Kmer::getFirstCode(bool asColorSpace) {
 	#ifdef ASSERT
 	assert(isValid());
 	#endif
-	uint8_t firstCode = 4;
 	if(asColorSpace){
-		firstCode = getPiece(KMER_STARTPIECE);
+		return CSC::mapBStoCS(getPiece(KMER_STARTPIECE),getPiece(KMER_STARTPIECE+1));
 	} else {
-		bool firstBaseKnown = ((getPiece(0) & KMER_FIRSTBASE_KNOWN) != 0);
-		if(firstBaseKnown){
-			firstCode = getPiece(KMER_FIRSTBASE_LOCATION);
-		} else {
-			// first base unknown, so [0-3] are all equally bad
-			// and piece 1 contains the checksum
-			firstCode = 4; // well... you did ask...
-		}
+		return getPiece(KMER_STARTPIECE);
 	}
-	return(firstCode);
 }
 
 
 char Kmer::getFirstSymbol(bool asColorSpace){
 	if(asColorSpace){
-		return CSC::csIntToCS(getFirstCode(asColorSpace),false);
+		return CSC::csIntToCS(getFirstCode(asColorSpace));
 	} else {
 		return CSC::bsIntToBS(getFirstCode(asColorSpace));
 	}
@@ -349,23 +294,16 @@ uint8_t Kmer::getLastCode(int wordSize, bool asColorSpace){
 	#ifdef ASSERT
 	assert(isValid());
 	#endif
-	uint8_t lastCode = 4;
 	if(asColorSpace){
-		lastCode = getPiece(wordSize);
+		return CSC::mapBStoCS(getPiece(wordSize-1),getPiece(wordSize));
 	} else {
-		bool firstBaseKnown = ((getPiece(0) & KMER_FIRSTBASE_KNOWN) != 0);
-		if(firstBaseKnown){
-			lastCode = getPiece(KMER_LASTBASE_LOCATION);
-		} else {
-			lastCode = 4;
-		}
+		return getPiece(wordSize);
 	}
-	return lastCode;
 }
 
 char Kmer::getLastSymbol(int wordSize, bool asColorSpace){
 	if(asColorSpace){
-		return CSC::csIntToCS(getLastCode(wordSize,asColorSpace),false);
+		return CSC::csIntToCS(getLastCode(wordSize,asColorSpace));
 	} else {
 		return CSC::bsIntToBS(getLastCode(wordSize,asColorSpace));
 	}
@@ -381,25 +319,18 @@ string Kmer::toString(int wordSize, bool showBases){
 	assert(isValid());
 	#endif
 	string out("");
-	bool fbKnown = firstBaseKnown();
 	if(showBases){
-		if(!fbKnown){
-			out += "N";
-		} else {
-			out += CSC::bsIntToBS(getPiece(KMER_FIRSTBASE_LOCATION));
-		}
+		out += CSC::bsIntToBS(getPiece(KMER_STARTPIECE));
 	}
 	// output colour-space sequence
-	for(int i = KMER_STARTPIECE; i <= wordSize; i++){
-		int code = getPiece(i);
-		out += CSC::csIntToCS(code,false);
+	int oldBase = getPiece(KMER_STARTPIECE);
+	for(int i = KMER_STARTPIECE+1; i <= wordSize; i++){
+		int nextBase = getPiece(i);
+		out += CSC::csIntToCS(CSC::mapBStoCS(oldBase, nextBase));
+		oldBase = nextBase;
 	}
 	if(showBases){
-		if(!fbKnown){
-			out += "N";
-		} else {
-			out += CSC::bsIntToBS(getPiece(KMER_LASTBASE_LOCATION));
-		}
+		out += CSC::bsIntToBS(getPiece(wordSize));
 	}
 	return out;
 }
@@ -415,18 +346,8 @@ string Kmer::toBSString(int wordSize){
 	assert(wordSize <= KMER_MAX_PIECES);
 	#endif
 	string out("");
-	out.reserve(wordSize);
-	bool fbKnown = firstBaseKnown();
-	if(!fbKnown){
-		out.append(wordSize,'N'); // first base unknown, so save a few processing steps
-	} else {
-		int lastBase = getPiece(KMER_FIRSTBASE_LOCATION);
-		out += CSC::bsIntToBS(lastBase);
-		for(int i = 1; i < (wordSize); i++){
-			int code = getPiece(i+1);
-			lastBase = CSC::mapCStoBS(lastBase,code);
-			out += CSC::bsIntToBS(lastBase);
-		}
+	for(int i = KMER_STARTPIECE; i <= wordSize; i++){
+		out += CSC::bsIntToBS(getPiece(i));
 	}
 	return out;
 }
@@ -446,55 +367,46 @@ Kmer Kmer::rComp(int wordSize){
 	assert(isValid());
 	#endif
 	int flags = getPiece(0);
-	bool firstBaseKnown = ((flags & KMER_FIRSTBASE_KNOWN) != 0);
 	Kmer tRC;
-	int firstBase = firstBaseKnown?CSC::complement(getPiece(KMER_FIRSTBASE_LOCATION)):4;
-	int lastBase = firstBaseKnown?CSC::complement(getPiece(KMER_LASTBASE_LOCATION)):4;
-	// reverse complement first/last bases are switched around
 	tRC.setPiece(0, flags);
-	tRC.setPiece(KMER_FIRSTBASE_LOCATION, lastBase);
-	tRC.setPiece(KMER_LASTBASE_LOCATION, firstBase);
 	// copy pieces across in reverse order
 	int copied = 0;
-	for(int piece = 0; piece < (wordSize-1); piece++){
-		int code = getPiece(piece+2);
-		tRC.setPiece(wordSize - piece, code);
+	for(int piece = 0; piece < wordSize; piece++){
+		int code = getPiece(KMER_STARTPIECE + piece);
+		tRC.setPiece(wordSize - piece, CSC::complement(code));
 		copied++;
 	}
 	return tRC;
 }
 
 void Kmer::pack(uint64_t*messageBuffer,int*messagePosition){
-	for(int i=0;i<getNumberOfU64();i++){
-		messageBuffer[*messagePosition]=getU64(i);
+	for(int i=0;i<KMER_U64_ARRAY_SIZE;i++){
+		messageBuffer[*messagePosition]=getRawBits(i);
 		(*messagePosition)++;
 	}
 }
 
 void Kmer::unpack(uint64_t*messageBuffer,int*messagePosition){
-	for(int i=0;i<getNumberOfU64();i++){
-		setU64(i,messageBuffer[*messagePosition]);
+	for(int i=0;i<KMER_U64_ARRAY_SIZE;i++){
+		m_u64[i] = messageBuffer[*messagePosition];
 		(*messagePosition)++;
 	}
 }
 
 void Kmer::unpack(vector<uint64_t>*messageBuffer,int*messagePosition){
-	for(int i=0;i<getNumberOfU64();i++){
-		setU64(i,(*messageBuffer)[*messagePosition]);
+	for(int i=0;i<KMER_U64_ARRAY_SIZE;i++){
+		m_u64[i] = messageBuffer->at(*messagePosition);
 		(*messagePosition)++;
 	}
 }
 
 uint64_t Kmer::hash_function_1(){
 	uint64_t key=m_u64[0];
-	for(int i=0;i<getNumberOfU64();i++){
+	for(int i=0;i<KMER_U64_ARRAY_SIZE;i++){
 		uint64_t newKey = m_u64[i];
 		if(i == 0){
-			// clear unknown bit and first base, as these may change
-			newKey &= KMER_CLEAR_FIRSTBASE;
-		}
-		if(i == KMER_LASTU64_LOCATION){
-			newKey &= KMER_CLEAR_LASTBASE;
+			// clear flags, as these are not relevant to the sequence
+			newKey &= KMER_CLEAR_FLAGS;
 		}
 		key ^= uniform_hashing_function_1_64_64(newKey);
 	}
@@ -507,10 +419,7 @@ uint64_t Kmer::hash_function_2(){
 		uint64_t newKey = m_u64[i];
 		if(i == 0){
 			// clear unknown bit and first base, as these may change
-			newKey &= KMER_CLEAR_FIRSTBASE;
-		}
-		if(i == KMER_LASTU64_LOCATION){
-			newKey &= KMER_CLEAR_LASTBASE;
+			newKey &= KMER_CLEAR_FLAGS;
 		}
 		key ^= uniform_hashing_function_2_64_64(newKey);
 	}
@@ -534,32 +443,12 @@ Kmer& Kmer::operator=(const Kmer&b){
 	return *this;
 }
 
-bool Kmer::isColorSpace() const{
-	return true;
-}
-
-bool Kmer::firstBaseKnown() const{
-	return((m_u64[0] & (uint64_t)KMER_FIRSTBASE_KNOWN) != 0);
-}
-
-
 int Kmer::compare(const Kmer& b) const{
 	// compare sequence at all known locations
-	bool allFirstBasesKnown = firstBaseKnown() && b.firstBaseKnown();
-	for(int i=0;i<KMER_U64_ARRAY_SIZE;i++){
+	// this moves in reverse so that the most significant base for comparison is the last base
+	for(int i=KMER_U64_ARRAY_SIZE-1;i>=0;i--){
 		uint64_t checkA = m_u64[i];
 		uint64_t checkB = b.m_u64[i];
-		if(!allFirstBasesKnown){
-			if(i == 0){
-				// at least one of the first bases is unknown, so ignore first base for comparison
-				checkA &= KMER_CLEAR_FIRSTBASE; // clear unknown bit and first base
-				checkB &= KMER_CLEAR_FIRSTBASE;
-			}
-			if(i == KMER_LASTU64_LOCATION){
-				checkA &= KMER_CLEAR_LASTBASE; // clear unknown bit and first base
-				checkB &= KMER_CLEAR_LASTBASE;
-			}
-		}
 		if(checkA<checkB){
 			return -1;
 		}else if(checkA>checkB){
@@ -578,15 +467,15 @@ bool Kmer::operator!=(const Kmer&b)const{
 }
 
 bool Kmer::operator<(const Kmer&b)const{
-	return (this->compare(b) < 0);
+	return (compare(b) < 0);
 }
 
 bool Kmer::isLower(Kmer*a){
-	return (this->compare(*a) < 0);
+	return (compare(*a) < 0);
 }
 
 bool Kmer::isEqual(Kmer*a){
-	return (this->compare(*a) == 0);
+	return (compare(*a) == 0);
 }
 
 int Kmer::vertexRank(int arraySize,int wordSize){
