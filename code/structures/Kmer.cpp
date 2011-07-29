@@ -407,6 +407,9 @@ Kmer Kmer::rComp(int wordSize){
 	// allocated uint64_t, then the transfer is allowed, even if the
 	// sequence is greater than MAXKMERLENGTH
 	// so, limit range checking to that done in set/get Piece
+	// TODO: there are cases where the reverse complement will be greater
+	//       than the current Kmer (e.g. ACGT -> [0]0123, RC == [1]0123).
+	//       This messes up the inequality testing, so should be fixed
 	#ifdef ASSERT
 	assert(isValid());
 	#endif

@@ -15,9 +15,14 @@ not circularized DNA (shorter outer distance).
  - rename ColorSpaceDecoder -> ColorSpaceCodec
  - rename encode -> encodeBStoCS to remove method name confusion
 * Kmer format drastically changed 
- - now stores direction flag together with first and last base
+ - now stores direction flag and validity flag
+ - only the smaller of a k-mer and its reverse complement is stored
+  - all things that generate k-mers should respect this
+    (a possible exception is made for reverse-complements)
+ - reverse complement is now much faster (only changes 1 bit)
+ - getting edges is a bit slower, because it needs to track the reverse-complement
+ - calculating vertex rank is now much faster (no reverse complement necessary)
  - shifted Kmer-specific functions into Kmer Class
- - all Kmers are now constructed as colour-space
 * Read constructor method is now a true constructor
 * Colour space loader automatically works out CSFASTQ/CSFASTA format
 * Added colour space decoder unit test
