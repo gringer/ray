@@ -82,7 +82,7 @@ void CoverageGatherer::writeKmers(){
 		vector<Kmer> children=node->getOutgoingEdges(&key,m_wordSize);
 		fprintf(kmerFile,"%s;%i;",kmerSequence.c_str(),coverage);
 		for(int i=0;i<(int)parents.size();i++){
-			char edge=parents[i].getFirstSymbol(false);
+			char edge=parents[i].getFirstSymbol(m_wordSize, false);
 			if(i!=0)
 				fprintf(kmerFile," ");
 

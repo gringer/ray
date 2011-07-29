@@ -45,6 +45,20 @@ Kmer::Kmer(string inSequence, int pos, int wordSize, char strand){
 	// insert unknown first base, if necessary
 	bool reverse = (strand == 'R')?true:false;
 	bool validSequence = true;
+
+	// initialise and zero bit arrays
+	// see http://www.fredosaurus.com/notes-cpp/arrayptr/array-initialization.html
+	uint64_t forwardBits[KMER_U64_ARRAY_SIZE] = {0};
+	uint64_t reverseBits[KMER_U64_ARRAY_SIZE] = {0};
+
+	// determine which array is the reverse complement orientation
+	if(reverse){
+		setPiece(0,KMER_FORWARD_DIRECTION | KMER_VALID,reverseBits);
+		setPiece(0,KMER_REVERSE_DIRECTION | KMER_VALID,forwardBits);
+	} else {
+		setPiece(0,KMER_FORWARD_DIRECTION | KMER_VALID,forwardBits);
+		setPiece(0,KMER_REVERSE_DIRECTION | KMER_VALID,reverseBits);
+	}
 	/*
 	 * * all sequences are stored internally as base-space
 	 * * sequence.at(1) makes sure range checking happens
@@ -106,11 +120,8 @@ Kmer::Kmer(string inSequence, int pos, int wordSize, char strand){
 	if(CSC::bsChrToBS(lastBase) == 'N'){
 		firstBaseKnown = false;
 	}
-	if(reverse){
-		lastBase = complementNucleotide(toupper(lastBase));
-	}
 	int lastBaseCode = CSC::bsChrToInt(lastBase);
-	for(int i = 1; i < wordSize; i++){
+	for(int i = KMER_STARTPIECE; i < wordSize; i++){
 		int nextCode = CSC::csChrToInt(inSequence.at(pos + i));
 		if(!isCS){ // map that base to colour-space
 			nextCode = CSC::mapBStoCS(lastBaseCode,nextCode);
@@ -121,11 +132,8 @@ Kmer::Kmer(string inSequence, int pos, int wordSize, char strand){
 			validSequence = false; // invalidate sequence
 		}
 //		cout << "Last base code: " << CSC::bsIntToBS(lastBaseCode) << endl;
-		if(!reverse){
-			setPiece(i, lastBaseCode);
-		} else {
-			setPiece((wordSize - (i - 1)), lastBaseCode);
-		}
+		setPiece(i, lastBaseCode, forwardBits);
+		setPiece((wordSize - (i - 1)), CSC::complement(lastBaseCode), reverseBits);
 		// get next base-space code
 		lastBaseCode = CSC::mapCStoBS(lastBaseCode,nextCode);
 	}
@@ -134,7 +142,8 @@ Kmer::Kmer(string inSequence, int pos, int wordSize, char strand){
 		lastBaseCode = 0;
 		validSequence = false; // invalidate sequence
 	} else {
-		setPiece(wordSize, lastBaseCode);
+		setPiece(wordSize, lastBaseCode, forwardBits);
+		setPiece(KMER_STARTPIECE, CSC::complement(lastBaseCode), reverseBits);
 	}
 	if(!validSequence){
 		cout << "Fatal: invalid input sequence: " << inSequence << endl;
@@ -143,8 +152,17 @@ Kmer::Kmer(string inSequence, int pos, int wordSize, char strand){
 		#endif
 		clear();
 	} else {
-		int flags = KMER_FORWARD_DIRECTION | (validSequence?KMER_VALID:0);
-		setPiece(0,flags);
+		// copy the appropriate direction bits, depending on which is the smaller value
+		if(this->compare(forwardBits,reverseBits) < 0){
+			for(int i=0; i < KMER_U64_ARRAY_SIZE; i++){
+				m_u64[i] = forwardBits[i];
+			}
+			// memcpy(m_u64,forwardBits,KMER_U64_ARRAY_SIZE); [this doesn't copy properly]
+		} else {
+			for(int i=0; i < KMER_U64_ARRAY_SIZE; i++){
+				m_u64[i] = reverseBits[i];
+			}
+		}
 	}
 }
 
@@ -152,16 +170,16 @@ Kmer::Kmer(string inSequence, int pos, int wordSize, char strand){
  * Used for initializing from raw bit sequences (e.g. messages)
  */
 Kmer::Kmer(uint64_t* rawBits){
-		for(int i=0;i<getNumberOfU64();i++){
-			m_u64[i]=rawBits[i];
-		}
-		#ifdef ASSERT
-		assert(isValid());
-		#endif
+	for(int i=0; i < KMER_U64_ARRAY_SIZE; i++){
+		m_u64[i] = rawBits[i];
+	}
+	#ifdef ASSERT
+	assert(isValid());
+	#endif
 }
 
 Kmer::Kmer(const Kmer& b){
-	for(int i=0;i<getNumberOfU64();i++){
+	for(int i=0; i < KMER_U64_ARRAY_SIZE; i++){
 		m_u64[i] = b.m_u64[i];
 	}
 	//TODO: no validity check because EdgePurgeWorker calls this for a brand new k-mer on array access
@@ -186,7 +204,7 @@ int Kmer::getNumberOfU64(){
 	return KMER_U64_ARRAY_SIZE;
 }
 
-void Kmer::printPieces() const {
+void Kmer::printPieces() {
 	printf("[flags=%d]",getPiece(0));
 	for(int i=KMER_STARTPIECE;i<MAXKMERLENGTH;i++){
 		printf("(%d)",getPiece(i));
@@ -201,16 +219,34 @@ void Kmer::printPieces() const {
  * then the bit-packed representation is 0b1101
  *
  * This function generates a vector of all k-mers generated from inserting
- * bases/colours into the start of this k-mer (pushing a base off the end).
+ * bases/colours into the start or end of this k-mer (pushing a base off
+ * the other side).
+ *
+ * Note: this function generates new k-mers, so it is necessary to be careful
+ *       to make sure that the lowest k-mer of forward/reverse-comp is used
  */
-vector<Kmer> Kmer::getIngoingEdges(uint8_t edges,int wordSize){
-	vector<Kmer> inEdges;
+vector<Kmer> Kmer::getEdges(uint8_t edges,int wordSize, bool outGoing){
+	vector<Kmer> newEdges;
 	Kmer kmerTemplate;
-	kmerTemplate.setPiece(0,getPiece(0)); // this copies the flags across
-	for(int i = KMER_STARTPIECE; i < (wordSize); i++){
+	Kmer kmerRCTemplate;
+	int flags = getPiece(0);
+	int flagsRC = flags ^ KMER_DIRECTION_MASK;
+	kmerTemplate.setPiece(0,flags);
+	kmerRCTemplate.setPiece(0,flagsRC);
+	bool rc = isRC();
+	bool fwd = !rc ^ outGoing;
+	int start = fwd?KMER_STARTPIECE:wordSize;
+	int end = fwd?wordSize:KMER_STARTPIECE;
+	int sourceAdjust = fwd?0:1;
+	int targetAdjust = fwd?1:0;
+	for(int i = 0; i<(wordSize-1); i++){
 		// shift sequence 'up' one base/colour
-		int nextPiece = getPiece(i);
-		kmerTemplate.setPiece(i+1, nextPiece);
+		int nextPiece = getPiece(i+KMER_STARTPIECE+sourceAdjust);
+		kmerTemplate.setPiece(i+KMER_STARTPIECE+targetAdjust, nextPiece);
+		kmerRCTemplate.setPiece(wordSize-(i+targetAdjust), CSC::complement(nextPiece));
+	}
+	if(outGoing){
+		edges >>= 4;
 	}
 	for(int code = 0; code < 4; code++, edges >>= 1){
 		if((edges & 1) == 1){
@@ -218,75 +254,53 @@ vector<Kmer> Kmer::getIngoingEdges(uint8_t edges,int wordSize){
 			// 	<< " to " << this->toString(wordSize, true)
 			// 	<< " (" << this->toBSString(wordSize) << ") -> ";
 			// copy from the template
-			Kmer kmerIn(kmerTemplate);
+			Kmer kmerNew(kmerTemplate);
+			Kmer kmerNewRC(kmerRCTemplate);
 			// add the new edge to the start of the Kmer
-			kmerIn.setPiece(KMER_STARTPIECE,code);
+			kmerNew.setPiece(start,rc?CSC::complement(code):code);
+			kmerNewRC.setPiece(end,rc?code:CSC::complement(code));
 			// finally, send to vector
-			inEdges.push_back(kmerIn);
+			newEdges.push_back((kmerNew < kmerNewRC)?kmerNew:kmerNewRC);
 		}
 	}
-	return inEdges;
+	return newEdges;
 }
 
-/*
- * edges is a 4-bit packed boolean array indicating which bases (or colours)
- * are ingoing edges for the Vertex that includes this Kmer. e.g. if A,G,T
- * (or 0,2,3) are all possible incoming edges (prefixes) for the vertex,
- * then the bit-packed representation is 0b1101
- *
- * This function generates a vector of all Kmers generated from inserting
- * bases/colours at the end of this Kmer (pushing a base off the start).
- *
- * This function is very similar to getIngoing edges, except for these points:
- *   * sequence is shifted from (i+1) to (i), rather than (i) to (i+1)
- *   * outgoing edges are stored in upper 4 bits (so >> 4 prior to adding edges)
- *   * replacement piece is set is at wordSize, rather than sequence start
- */
+vector<Kmer> Kmer::getIngoingEdges(uint8_t edges,int wordSize){
+	return(getEdges(edges,wordSize,false));
+}
+
 vector<Kmer> Kmer::getOutgoingEdges(uint8_t edges,int wordSize){
-	vector<Kmer> outEdges;
-	Kmer kmerTemplate;
-	kmerTemplate.setPiece(0,getPiece(0)); // this copies the flags across
-	for(int i = KMER_STARTPIECE; i < (wordSize); i++){
-		// shift sequence 'down' one base/colour
-		int nextPiece = getPiece(i+1);
-		kmerTemplate.setPiece(i, nextPiece);
-	}
-	// outgoing edges are stored in the high bits, so shift down 4
-	edges >>= 4;
-	for(int code = 0; code < 4; code++, edges >>= 1){
-		if((edges & 1) == 1){
-			// cout << "adding outgoing edge " << CSC::bsIntToBS(code)
-			// 	<< " to " << this->toString(wordSize, true)
-			// 	<< " (" << this->toBSString(wordSize) << ") -> ";
-			// copy from the template
-			Kmer kmerOut(kmerTemplate);
-			// add the new edge to the end of the Kmer
-			kmerOut.setPiece(wordSize,code);
-			// finally, send to vector
-			outEdges.push_back(kmerOut);
-		}
-	}
-	return outEdges;
+	return(getEdges(edges,wordSize,true));
 }
 
 
-uint8_t Kmer::getFirstCode(bool asColorSpace) {
+uint8_t Kmer::getFirstCode(int wordSize, bool asColorSpace) {
 	#ifdef ASSERT
 	assert(isValid());
 	#endif
+	bool rc = isRC();
 	if(asColorSpace){
-		return CSC::mapBStoCS(getPiece(KMER_STARTPIECE),getPiece(KMER_STARTPIECE+1));
+		if(rc){
+			return CSC::mapBStoCS(getPiece(wordSize-1),getPiece(wordSize));
+		} else {
+			return CSC::mapBStoCS(getPiece(KMER_STARTPIECE),getPiece(KMER_STARTPIECE+1));
+		}
 	} else {
-		return getPiece(KMER_STARTPIECE);
+		if(rc){
+			return CSC::complement(getPiece(wordSize));
+		} else {
+			return getPiece(KMER_STARTPIECE);
+		}
 	}
 }
 
 
-char Kmer::getFirstSymbol(bool asColorSpace){
+char Kmer::getFirstSymbol(int wordSize, bool asColorSpace){
 	if(asColorSpace){
-		return CSC::csIntToCS(getFirstCode(asColorSpace));
+		return CSC::csIntToCS(getFirstCode(wordSize, asColorSpace));
 	} else {
-		return CSC::bsIntToBS(getFirstCode(asColorSpace));
+		return CSC::bsIntToBS(getFirstCode(wordSize, asColorSpace));
 	}
 }
 
@@ -294,6 +308,20 @@ uint8_t Kmer::getLastCode(int wordSize, bool asColorSpace){
 	#ifdef ASSERT
 	assert(isValid());
 	#endif
+	bool rc = isRC();
+	if(asColorSpace){
+		if(rc){
+			return CSC::mapBStoCS(getPiece(KMER_STARTPIECE),getPiece(KMER_STARTPIECE+1));
+		} else {
+			return CSC::mapBStoCS(getPiece(wordSize-1),getPiece(wordSize));
+		}
+	} else {
+		if(rc){
+			return CSC::complement(getPiece(KMER_STARTPIECE));
+		} else {
+			return getPiece(wordSize);
+		}
+	}
 	if(asColorSpace){
 		return CSC::mapBStoCS(getPiece(wordSize-1),getPiece(wordSize));
 	} else {
@@ -318,19 +346,31 @@ string Kmer::toString(int wordSize, bool showBases){
 	#ifdef ASSERT
 	assert(isValid());
 	#endif
+	bool rc = isRC();
 	string out("");
 	if(showBases){
-		out += CSC::bsIntToBS(getPiece(KMER_STARTPIECE));
+		if(rc){
+			out += CSC::bsIntToBS(CSC::complement(getPiece(wordSize)));
+		} else {
+			out += CSC::bsIntToBS(getPiece(KMER_STARTPIECE));
+		}
 	}
 	// output colour-space sequence
 	int oldBase = getPiece(KMER_STARTPIECE);
-	for(int i = KMER_STARTPIECE+1; i <= wordSize; i++){
-		int nextBase = getPiece(i);
+	if(rc){
+		oldBase = getPiece(wordSize);
+	}
+	for(int i = 1; i < wordSize; i++){
+		int nextBase = (rc)?getPiece(i+KMER_STARTPIECE):getPiece(wordSize-i);
 		out += CSC::csIntToCS(CSC::mapBStoCS(oldBase, nextBase));
 		oldBase = nextBase;
 	}
 	if(showBases){
-		out += CSC::bsIntToBS(getPiece(wordSize));
+		if(rc){
+			out += CSC::bsIntToBS(CSC::complement(getPiece(KMER_STARTPIECE)));
+		} else {
+			out += CSC::bsIntToBS(getPiece(wordSize));
+		}
 	}
 	return out;
 }
@@ -345,9 +385,14 @@ string Kmer::toBSString(int wordSize){
 	assert(isValid());
 	assert(wordSize <= KMER_MAX_PIECES);
 	#endif
+	bool rc = isRC();
 	string out("");
-	for(int i = KMER_STARTPIECE; i <= wordSize; i++){
-		out += CSC::bsIntToBS(getPiece(i));
+	for(int i = 0; i < wordSize; i++){
+		if(rc){
+			out += CSC::bsIntToBS(CSC::complement(getPiece(wordSize - i)));
+		} else {
+			out += CSC::bsIntToBS(getPiece(i+KMER_STARTPIECE));
+		}
 	}
 	return out;
 }
@@ -355,8 +400,7 @@ string Kmer::toBSString(int wordSize){
 /*
  * Return the reverse-complement of this Kmer. The reverse complement will
  * be returned as a colour-space Kmer.
- * TODO: reverse complement should be constant time, or at most O(getNumberOfU64()), rather than O(wordSize)
- */
+  */
 
 Kmer Kmer::rComp(int wordSize){
 	// Based on previous code, if a sequence can fit in the number of
@@ -367,15 +411,9 @@ Kmer Kmer::rComp(int wordSize){
 	assert(isValid());
 	#endif
 	int flags = getPiece(0);
-	Kmer tRC;
+	flags = flags ^ KMER_DIRECTION_MASK;
+	Kmer tRC(*this);
 	tRC.setPiece(0, flags);
-	// copy pieces across in reverse order
-	int copied = 0;
-	for(int piece = 0; piece < wordSize; piece++){
-		int code = getPiece(KMER_STARTPIECE + piece);
-		tRC.setPiece(wordSize - piece, CSC::complement(code));
-		copied++;
-	}
 	return tRC;
 }
 
@@ -418,7 +456,7 @@ uint64_t Kmer::hash_function_2(){
 	for(int i=0;i<getNumberOfU64();i++){
 		uint64_t newKey = m_u64[i];
 		if(i == 0){
-			// clear unknown bit and first base, as these may change
+			// clear flags, as these are not relevant to the sequence
 			newKey &= KMER_CLEAR_FLAGS;
 		}
 		key ^= uniform_hashing_function_2_64_64(newKey);
@@ -428,24 +466,41 @@ uint64_t Kmer::hash_function_2(){
 
 Kmer& Kmer::operator=(const Kmer&b){
 	if(this != &b){
-		for(int i=0;i<KMER_U64_ARRAY_SIZE;i++){
-			m_u64[i]=b.m_u64[i];
+		for(int i=0; i < KMER_U64_ARRAY_SIZE; i++){
+			m_u64[i] = b.m_u64[i];
 		}
 		#ifdef ASSERT
-		if(!isValid()){
-			cout << "Address: " << &b << endl;
-			b.printPieces();
-			this->printPieces();
-			assert(isValid());
-		}
+		assert(isValid());
 		#endif
 	}
 	return *this;
 }
 
+/*
+ * compare bit sequence at all known locations
+ * this moves in reverse so that the most significant base for comparison is the last base
+ * Returns 0 if the bits are the same, 1 if a is greater than b, -1 if a is less than b
+ */
+
+int Kmer::compare(uint64_t* a, uint64_t* b) const{
+	for(int i=KMER_U64_ARRAY_SIZE-1;i>=0;i--){
+		uint64_t checkA = a[i];
+		uint64_t checkB = b[i];
+		if(checkA<checkB){
+			return -1;
+		}else if(checkA>checkB){
+			return 1;
+		}
+	}
+	return 0;
+}
+
+/*
+ * compare Kmer at all known locations
+ * this moves in reverse so that the most significant base for comparison is the last base
+ * Returns 0 if the sequences are the same, 1 if a is greater than b, -1 if a is less than b
+ */
 int Kmer::compare(const Kmer& b) const{
-	// compare sequence at all known locations
-	// this moves in reverse so that the most significant base for comparison is the last base
 	for(int i=KMER_U64_ARRAY_SIZE-1;i>=0;i--){
 		uint64_t checkA = m_u64[i];
 		uint64_t checkB = b.m_u64[i];
@@ -459,7 +514,47 @@ int Kmer::compare(const Kmer& b) const{
 }
 
 bool Kmer::operator==(const Kmer&b)const{
-	return (this->compare(b) == 0);
+	if(this->isRC() == b.isRC()){
+		return (compare(b) == 0);
+	} else {
+		// k-mers are reverse complemented, so determining equality is more tricky
+		// The word size is not known... assume kmers are equal to get
+		// the number of As at the end of the complement string
+		// tk -- this k-mer starts with the complement of 0/A (i.e. 3/T)
+		bool tk = (getPiece(KMER_STARTPIECE) == 3);
+		int startingTs = 0;
+		int lastComplementPos = -1;
+		bool doneTs = false;
+		int wordSize = 0;
+		for(int i = KMER_STARTPIECE; i < KMER_MAX_PIECES; i++){
+			if((tk?b:(*this)).getPiece(i) != 0){
+				lastComplementPos = i;
+				wordSize = lastComplementPos + startingTs;
+			}
+			if(!doneTs && ((tk?(*this):b).getPiece(i) == 3)){
+				startingTs++;
+				wordSize++;
+			} else {
+				doneTs = true;
+			}
+			if(wordSize > KMER_MAX_PIECES){
+				// it is impossible for these to be equal
+				// e.g. TTTTTTTTTTAGA vs TCTAAAAAAAAAG
+				return false;
+			}
+		}
+		// if the forward direction is all Ts, equality can now be worked out
+		if(lastComplementPos == -1){
+			return (startingTs == KMER_MAX_PIECES);
+		}
+		// now there is a reasonable prediction for the word size
+		for(int i = 0; i < wordSize; i++){
+			if(getPiece(i+KMER_STARTPIECE) != CSC::complement(b.getPiece(wordSize-i))){
+				return false;
+			}
+		}
+		return true;
+	}
 }
 
 bool Kmer::operator!=(const Kmer&b)const{
@@ -479,10 +574,10 @@ bool Kmer::isEqual(Kmer*a){
 }
 
 int Kmer::vertexRank(int arraySize,int wordSize){
-	Kmer b=rComp(wordSize);
-	//TODO: work out why the copy is necessary here
-	if(isLower(&b)){
-		b=*this;
-	}
-	return b.hash_function_1()%(arraySize);
+	// no copy necessary... the hash of a reverse complement is the same as the original
+	return hash_function_1()%(arraySize);
+}
+
+bool Kmer::isRC()const{
+	return ((m_u64[0] & KMER_DIRECTION_MASK) == KMER_REVERSE_DIRECTION);
 }

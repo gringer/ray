@@ -26,6 +26,7 @@
 #include <format/ColorSpaceCodec.h>
 #include <stdint.h>
 #include <vector>
+#include <cstring>
 #include <string>
 #include <iostream>
 #ifdef ASSERT
@@ -66,7 +67,7 @@ using namespace std;
 // piece 0 flags, piece 1 firstBase...
 // colour-space sequence begins from piece 2
 #define KMER_STARTPIECE           (1)
-#define KMER_DIRECTION            (0b0)
+#define KMER_DIRECTION_MASK       (0b1)
 #define KMER_FORWARD_DIRECTION    (0b0)
 #define KMER_REVERSE_DIRECTION    (0b1)
 #define KMER_VALID                (0b10)
@@ -102,8 +103,9 @@ public:
 	bool isValid();
 	bool isEqual(Kmer*a);
 	bool isLower(Kmer*a);
+	int compare(uint64_t* a, uint64_t* b)const;
 	int compare(const Kmer& a)const;
-	void printPieces()const;
+	void printPieces();
 	void pack(uint64_t*messageBuffer,int*messagePosition);
 	void unpack(uint64_t*messageBuffer,int*messagePosition);
 	void unpack(vector<uint64_t>*messageBuffer,int*messagePosition);
@@ -113,11 +115,14 @@ public:
 	 */
 	string toString(int wordsize, bool showBases);
 	Kmer rComp(int wordSize);
-	uint8_t getFirstCode(bool asColorSpace);
-	char getFirstSymbol(bool asColorSpace);
+	uint8_t getFirstCode(int wordSize, bool asColorSpace);
+	char getFirstSymbol(int wordSize, bool asColorSpace);
 	uint8_t getLastCode(int wordSize, bool asColorSpace);
 	char getLastSymbol(int wordSize, bool asColorSpace);
 	int vertexRank(int arraySize,int wordSize);
+
+	vector<Kmer> getEdges(uint8_t edges,int wordSize, bool outGoing);
+
 	/**
 	 * get the outgoing Kmer objects for a Kmer a having edges and
 	 * a k-mer length k
@@ -135,13 +140,16 @@ public:
 
 	INLINE
 	void clear(){
-		for(int i=0;i<KMER_U64_ARRAY_SIZE;i++){
-			m_u64[i]=0;
+		for(int i=0; i < KMER_U64_ARRAY_SIZE; i++){
+			m_u64[i] = 0;
 		}
 	}
 
 	INLINE
-	void setPiece(int piece, int code){
+	void setPiece(int piece, int code, uint64_t* bitArray = NULL){
+		if(bitArray == NULL){
+			bitArray = m_u64;
+		}
 		int arrayPos = piece / 32;
 		int bitLocation = (piece % 32) << 1;
 		#ifdef ASSERT
@@ -151,8 +159,8 @@ public:
 		// add in some range checking
 		if(arrayPos < KMER_U64_ARRAY_SIZE){
 			// note: cast to uint64_t is necessary to make shift work correctly
-			m_u64[arrayPos] &= ~((uint64_t)KMER_2BIT_MASK << bitLocation); // clear previous set bits
-			m_u64[arrayPos] |= ((uint64_t)code << bitLocation); // set new bits
+			bitArray[arrayPos] &= ~((uint64_t)KMER_2BIT_MASK << bitLocation); // clear previous set bits
+			bitArray[arrayPos] |= ((uint64_t)code << bitLocation); // set new bits
 		}
 	}
 
@@ -165,6 +173,22 @@ public:
 		#endif
 		if(arrayPos < KMER_U64_ARRAY_SIZE){
 			int code = ((m_u64[arrayPos] >> bitLocation) & KMER_2BIT_MASK);
+			return(code); // retrieve bits from position
+		} else {
+			//cout << "error: attempt to access out of array bounds" << endl;
+			return -1;
+		}
+	}
+
+	INLINE
+	int getPiece(int piece, uint64_t* bitArray){
+		int arrayPos = piece / 32;
+		int bitLocation = (piece % 32) << 1;
+		#ifdef ASSERT
+		assert(arrayPos < KMER_U64_ARRAY_SIZE);
+		#endif
+		if(arrayPos < KMER_U64_ARRAY_SIZE){
+			int code = ((bitArray[arrayPos] >> bitLocation) & KMER_2BIT_MASK);
 			return(code); // retrieve bits from position
 		} else {
 			//cout << "error: attempt to access out of array bounds" << endl;
@@ -186,6 +210,8 @@ public:
 
 	/** hash 2 is used for double hashing in the hash tables */
 	uint64_t hash_function_2();
+
+	bool isRC() const;
 
 }ATTRIBUTE_PACKED;
 

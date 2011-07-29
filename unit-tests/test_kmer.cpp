@@ -188,7 +188,7 @@ void test_Ingoing_large2(){
 	uint8_t edges=(1<<0);
 
 	Kmer aKmer(a);
-	assertEquals(aKmer.getFirstCode(false),RAY_NUCLEOTIDE_A);
+	assertEquals(aKmer.getFirstCode(wordSize, false),RAY_NUCLEOTIDE_A);
 
 	Kmer bKmer(b);
 	vector<Kmer>inEdges=bKmer.getIngoingEdges(edges,wordSize);
@@ -420,7 +420,7 @@ int main(int argc,char**argv){
 
 		assertEquals(tmp.count(a),0);
 		tmp.insert(a);
-		assertEquals(a.substr(1,wordSize-1),seq.substr(0,wordSize-1));
+		assertEquals(seq.substr(0,wordSize-1),a.substr(1,wordSize-1));
 	}
 	assertEquals(tmp.size(),4);
 

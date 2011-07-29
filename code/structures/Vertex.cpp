@@ -66,7 +66,7 @@ vector<Kmer> Vertex::getOutgoingEdges(Kmer*a,int k){
 }
 
 void Vertex::addIngoingEdge_ClassicMethod(Kmer*vertex,Kmer*a,int k){
-	uint8_t s1First=a->getFirstCode(false);
+	uint8_t s1First=a->getFirstCode(k,false);
 	// add s1First to edges.
 	uint8_t newBits=(1<<(s1First));
 	if(*vertex==m_lowerKey){
@@ -77,7 +77,7 @@ void Vertex::addIngoingEdge_ClassicMethod(Kmer*vertex,Kmer*a,int k){
 }
 
 void Vertex::deleteIngoingEdge(Kmer*vertex,Kmer*a,int k){
-	uint8_t s1First=a->getFirstCode(false);
+	uint8_t s1First=a->getFirstCode(k,false);
 	// delete s1First from edges.
 	uint8_t newBits=(1<<(s1First));
 	newBits=~newBits;
