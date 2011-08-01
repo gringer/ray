@@ -475,6 +475,10 @@ void FusionData::makeFusions(){
 	// if a path is 100% identical to another one, but is reverse-complement, keep the one with the lowest ID
 	
 	int END_LENGTH=100;
+	if(m_ed->m_EXTENSION_contigs[m_seedingData->m_SEEDING_i].size() > 100000)
+		END_LENGTH=256;
+
+	int maximumDifference=500;
 	// avoid duplication of contigs.
 	if(m_seedingData->m_SEEDING_i<(uint64_t)m_ed->m_EXTENSION_contigs.size()){
 		if((int)m_ed->m_EXTENSION_contigs[m_seedingData->m_SEEDING_i].size()<=END_LENGTH){
@@ -593,7 +597,10 @@ void FusionData::makeFusions(){
 						for(int p=0;p<(int)ends[otherPathId].size();p++){
 							int observedLength=ends[otherPathId][p]-starts[otherPathId][k]+1;
 							int expectedLength=m_ed->m_EXTENSION_contigs[m_seedingData->m_SEEDING_i].size()-2*END_LENGTH+1;
-							if(observedLength==expectedLength){
+							int difference=observedLength-expectedLength;
+							if(difference<0)
+								difference=-difference;
+							if(difference <= maximumDifference){
 								m_FUSION_matches.push_back(otherPathId);
 								found=true;
 								break;
@@ -736,7 +743,10 @@ void FusionData::makeFusions(){
 						for(int p=0;p<(int)ends[otherPathId].size();p++){
 							int observedLength=ends[otherPathId][p]-starts[otherPathId][k]+1;
 							int expectedLength=m_ed->m_EXTENSION_contigs[m_seedingData->m_SEEDING_i].size()-2*END_LENGTH+1;
-							if(observedLength==expectedLength){
+		
+							int difference=observedLength-expectedLength;
+			
+							if(difference <= maximumDifference){
 								m_FUSION_matches.push_back(otherPathId);
 								found=true;
 								break;
