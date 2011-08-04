@@ -133,4 +133,7 @@ http://twitter.com/sebhtml
 
 - Élénie Godzaridis
 
-	
+
+## Contributors
+
+- David Eccles
