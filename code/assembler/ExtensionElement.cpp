@@ -25,13 +25,13 @@
 
 /** set the sequence */
 void ExtensionElement::setSequence(string b,MyAllocator*allocator){
-	m_readSequence=(char*)allocator->allocate((b.length()+1)*sizeof(char));
-	strcpy(m_readSequence,b.c_str());
-	m_hasPairedRead=false;
+	Read newRead(b,allocator);
+	m_read = newRead;
+	m_hasPairedRead = false;
 }
 
-char*ExtensionElement::getSequence(){
-	return m_readSequence;
+string ExtensionElement::getSequence(){
+	return(m_read.getSeq());
 }
 
 int ExtensionElement::getPosition(){
@@ -88,7 +88,7 @@ int ExtensionElement::getStrandPosition(){
 }
 
 void ExtensionElement::removeSequence(){
-	m_readSequence=NULL;
+	/* TODO:  not implemented */
 }
 
 void ExtensionElement::constructor(){

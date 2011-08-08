@@ -19,6 +19,8 @@
 
 */
 
+/* TODO: free sequence in ExtensionElement objects when they are not needed anymore */
+
 #include <core/constants.h>
 #include <memory/malloc_types.h>
 #include <string.h>
@@ -262,6 +264,7 @@ int*receivedVertexCoverage,bool*edgesReceived,vector<Kmer>*receivedOutgoingEdges
 			#ifdef ASSERT
 			assert(element!=NULL);
 			#endif
+/*
 			char*read=element->getSequence();
 			if(read==NULL){
 				continue;
@@ -270,6 +273,7 @@ int*receivedVertexCoverage,bool*edgesReceived,vector<Kmer>*receivedOutgoingEdges
 			assert(read!=NULL);
 			#endif
 			
+*/
 /*
 			element->removeSequence();
 			ed->getAllocator()->free(read,strlen(read)+1);
@@ -346,22 +350,38 @@ int*receivedVertexCoverage,bool*edgesReceived,vector<Kmer>*receivedOutgoingEdges
 				assert(element!=NULL);
 				#endif
 				int startPosition=element->getPosition();
+
+/**
+ * indels model for PacBio and 454 reads
+
+
+algorithm:
+
+for read in reads:
+	extensionElement.find(vertices,&index,&distance,positionInContig)
+	if index>=0:
+		selectedVertex=vertices[index]
+
+what happened:
+	the extension element updated its last anchor to (distance,positionInContig) if a vertex from vertices was found
+otherwise, index is < 0 and the extension element remains unchanged.
+
+Presently, insertions or deletions up to 8 are supported.
+*/
+
 				int distance=ed->m_EXTENSION_extension->size()-startPosition+element->getStrandPosition();
 
-				//int repeatValueForRightRead=ed->m_repeatedValues->at(startPosition);
 				#ifdef ASSERT
 				assert(startPosition<(int)ed->m_extensionCoverageValues->size());
 				#endif
 
-				//int repeatThreshold=100;
-
-				char*theSequence=element->getSequence();
+				m_receivedString = element->getSequence();
 				#ifdef ASSERT
-				assert(theSequence!=NULL);
+				assert(m_receivedString.length() > 0);
 				#endif
-				ed->m_EXTENSION_receivedLength=strlen(theSequence);
+				ed->m_EXTENSION_receivedLength=m_receivedString.length();
 				if(distance>(ed->m_EXTENSION_receivedLength-wordSize)){
-					cout<<"OutOfRange UniqueId="<<uniqueId<<" Length="<<strlen(theSequence)<<" StartPosition="<<element->getPosition()<<" CurrentPosition="<<ed->m_EXTENSION_extension->size()-1<<" StrandPosition="<<element->getStrandPosition()<<endl;
+					cout<<"OutOfRange UniqueId="<<uniqueId<<" Length="<<m_receivedString.length()<<" StartPosition="<<element->getPosition()<<" CurrentPosition="<<ed->m_EXTENSION_extension->size()-1<<" StrandPosition="<<element->getStrandPosition()<<endl;
 					#ifdef ASSERT
 					assert(false);
 					#endif
@@ -376,7 +396,7 @@ int*receivedVertexCoverage,bool*edgesReceived,vector<Kmer>*receivedOutgoingEdges
 				assert(element->getType()==TYPE_SINGLE_END||element->getType()==TYPE_RIGHT_END||element->getType()==TYPE_LEFT_END);
 				#endif
 
-				ed->m_EXTENSION_receivedReadVertex=Kmer(theSequence,distance,wordSize,theRightStrand);
+				ed->m_EXTENSION_receivedReadVertex=Kmer(m_receivedString,distance,wordSize,theRightStrand);
 				// process each edge separately.
 				// got a match!
 
@@ -466,20 +486,25 @@ int*receivedVertexCoverage,bool*edgesReceived,vector<Kmer>*receivedOutgoingEdges
 							break;// can'T free if there are no pairs
 						}
 						uint64_t uniqueId=ed->m_sequencesToFree[i];
+/*
 						#ifdef HUNT_INFINITE_BUG
 						if(m_ed->m_EXTENSION_extension->size()>10000){
 							cout<<"Removing "<<uniqueId<<"  now="<<m_ed->m_EXTENSION_extension->size()-1<<endl;
 						}
 						#endif
+*/
 						m_ed->m_pairedReadsWithoutMate->erase(uniqueId);
+
 						// free the sequence
-						ExtensionElement*element=ed->getUsedRead(uniqueId);
 						#ifdef ASSERT
+						ExtensionElement*element=ed->getUsedRead(uniqueId);
 						if(element==NULL){
 							cout<<"element "<<uniqueId<<" not found now="<<m_ed->m_EXTENSION_extension->size()-1<<""<<endl;
 						}
 						assert(element!=NULL);
 						#endif
+
+/*
 						char*read=element->getSequence();
 						if(read!=NULL){
 							#ifdef ASSERT
@@ -488,6 +513,7 @@ int*receivedVertexCoverage,bool*edgesReceived,vector<Kmer>*receivedOutgoingEdges
 							element->removeSequence();
 							ed->getAllocator()->free(read,strlen(read)+1);
 						}
+*/
 
 						// remove it
 						ed->removeSequence(uniqueId);
@@ -931,7 +957,8 @@ BubbleData*bubbleData,int minimumCoverage,OpenAssemblerChooser*oa,int wordSize,v
 
 						int startPosition=ed->m_EXTENSION_extension->size()-1;
 						int positionOnStrand=anElement->getStrandPosition();
-						int rightReadLength=(int)strlen(anElement->getSequence());
+						m_receivedString = anElement->getSequence();
+						int rightReadLength=m_receivedString.length();
 						int observedFragmentLength=(startPosition-startingPositionOnPath)+rightReadLength+extensionElement->getStrandPosition()-positionOnStrand;
 						int multiplier=3;
 
@@ -981,7 +1008,7 @@ BubbleData*bubbleData,int minimumCoverage,OpenAssemblerChooser*oa,int wordSize,v
 				#ifdef ASSERT
 				assert(node!=NULL);
 				#endif
-				m_receivedString=node->getValue()->getSeq(false);
+				m_receivedString=node->getValue()->getSeq();
 				PairedRead*pr=node->getValue()->getPairedRead();
 
 				PairedRead dummy;
@@ -1093,6 +1120,7 @@ BubbleData*bubbleData,int minimumCoverage,OpenAssemblerChooser*oa,int wordSize,v
 					//cout<<"Adding read "<<uniqueId<<" at "<<position<<endl;
 					m_matesToMeet.erase(uniqueId);
 					ExtensionElement*element=ed->addUsedRead(uniqueId);
+
 					element->setSequence(m_receivedString,ed->getAllocator());
 					element->setStartingPosition(startPosition);
 					element->setStrand(annotation.getStrand());
@@ -1101,7 +1129,8 @@ BubbleData*bubbleData,int minimumCoverage,OpenAssemblerChooser*oa,int wordSize,v
 					ed->m_EXTENSION_readsInRange->insert(uniqueId);
 
 					#ifdef ASSERT
-					assert(readLength==(int)strlen(element->getSequence()));
+					m_receivedString = element->getSequence();
+					assert(readLength==(int)m_receivedString.length());
 					#endif
 		
 					int expiryPosition=position+readLength-positionOnStrand-wordSize;

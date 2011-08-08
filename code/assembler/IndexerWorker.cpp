@@ -22,13 +22,11 @@
 #include <assembler/IndexerWorker.h>
 #include <string>
 
-void IndexerWorker::constructor(int sequenceId,const char* sequence,Parameters*parameters,RingAllocator*outboxAllocator,
+void IndexerWorker::constructor(int sequenceId,Parameters*parameters,RingAllocator*outboxAllocator,
 	VirtualCommunicator*vc,uint64_t workerId,ArrayOfReads*a,MyAllocator*allocator){
 	m_reads=a;
 	m_allocator=allocator;
 	m_sequenceId=sequenceId;
-	strncpy(m_sequence,sequence,4095); // get a segfault if using string here
-	m_sequence[4095] = '\0';
 	m_parameters=parameters;
 	m_outboxAllocator=outboxAllocator;
 	m_virtualCommunicator=vc;
@@ -38,7 +36,6 @@ void IndexerWorker::constructor(int sequenceId,const char* sequence,Parameters*p
 	m_reverseIndexed=false;
 	m_position=0;
 	m_coverageRequested=false;
-	m_theLength=strlen(m_sequence); // not sequence, because sequence could be longer than m_sequence
 	m_vertexIsDone=false;
 	m_vertexInitiated=false;
 	m_fetchedCoverageValues=false;
@@ -51,13 +48,19 @@ bool IndexerWorker::isDone(){
 }
 
 void IndexerWorker::work(){
+	Read*read=m_reads->at(m_workerId);
+
+	#ifdef ASSERT
+	assert(read!=NULL);
+	#endif
+
 	if(m_done){
 		return;
 	}else if(!m_fetchedCoverageValues){
-		if(m_position>m_theLength-m_parameters->getWordSize()){
+		if(m_position>read->length() -m_parameters->getWordSize()){
 			m_fetchedCoverageValues=true;
 		}else if(!m_coverageRequested){
-			Kmer vertex(string(m_sequence),m_position,m_parameters->getWordSize(),'F');
+			Kmer vertex=read->getVertex(m_position,m_parameters->getWordSize(),'F',false);
 			m_vertices.push_back(vertex,m_allocator);
 			int sendTo=m_parameters->_vertexRank(&vertex);
 			uint64_t*message=(uint64_t*)m_outboxAllocator->allocate(1*sizeof(uint64_t));
@@ -148,7 +151,7 @@ void IndexerWorker::work(){
 				Kmer vertex=m_vertices.at(selectedPosition).rComp(m_parameters->getWordSize());
 				int sendTo=m_parameters->_vertexRank(&vertex);
 				uint64_t*message=(uint64_t*)m_outboxAllocator->allocate(5*sizeof(uint64_t));
-				int positionOnStrand=m_theLength-m_parameters->getWordSize()-selectedPosition;
+				int positionOnStrand=read->length()-m_parameters->getWordSize()-selectedPosition;
 				int j=0;
 				vertex.pack(message,&j);
 				message[j++]=m_parameters->getRank();

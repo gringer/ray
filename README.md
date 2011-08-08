@@ -8,11 +8,38 @@ online and in Portable Document Format),
 on http://github.com/sebhtml/ray (with the README.md), in the 
 C++ code using Doxygen and in the journal paper as well.
 
-Enjoy the README.
+## Features & quick facts
 
-Ray is implemented in C++, version ISO/IEC 14882:1998.
+- Ray is a high-performance peer-to-peer software.
+ - http://dskernel.blogspot.com/2011/07/understand-main-loop-of-message-passing.html
 
-It also utilises the message-passing interface (MPI), version 2.2.
+- Ray can be utilised as a k-mer counter.
+- Ray builds a k-mer graph (subgraph of a full de Bruijn graph).
+- Ray finds paths in this graph.
+
+- Ray is implemented in C++, version ISO/IEC 14882:1998.
+- Ray utilises the message-passing interface (MPI), version 2.2.
+- Ray supports various network interconnects, thanks to the message-passing interface (MessagesHandler).
+- Ray is cloud-ready thanks to the message-passing interface.
+ - http://aws.amazon.com/ec2/hpc-applications/
+
+- Ray utilises distributed sparse hash tables with double hashing (MyHashTable).
+- Ray utilises smart pointers.
+- Ray does garbage collection using real-time memory defragmentation & compaction (DefragmentationGroup).
+- Ray utilises a Bloom filter to avoid storing most of the erroneous k-mers in memory.
+
+- Ray utilises virtual communication (VirtualCommunicator).
+ - http://dskernel.blogspot.com/2011/01/virtual-communicator.html
+ - http://dskernel.blogspot.com/2011/06/more-on-virtual-communication-with.html 
+
+- Ray supports substitution DNA sequencing errors (Illumina).
+- Ray supports indels DNA sequencing errors (Pacific Biosciences, 454). <b>In development</b>
+- Ray supports paired reads to traverse repeats.
+- Ray outputs scaffolds (+ many other useful files).
+
+- Ray is open source with the GNU General Public License.
+- Ray is a single executable called Ray (Ray.exe on Microsoft Windows).
+- Ray is easy to install and easy to use.
 
 # Website
 
@@ -24,9 +51,9 @@ It also utilises the message-passing interface (MPI), version 2.2.
 
 # Mailing lists
 
-- denovoassembler-users AT lists.sourceforge.net
+- Users: denovoassembler-users AT lists.sourceforge.net
 
-- denovoassembler-devel AT lists.sourceforge.net
+- Development/hacking: denovoassembler-devel AT lists.sourceforge.net
 
 - SEQanswers: http://seqanswers.com/forums/showthread.php?t=4301
 
@@ -102,11 +129,20 @@ http://denovoassembler.sf.net/publications.html
 	cd DoxygenDocumentation/html
 	firefox index.html
 
+# Useful links
+
+## Cloud computing
+
+- http://aws.amazon.com/ec2/hpc-applications/
+- https://cloud.genomics.cn/
+- http://szdaily.sznews.com/html/2011-08/04/content_1689998.htm
+- http://www.nature.com/nbt/journal/v28/n7/full/nbt0710-691.html
 
 ## Message-passing interface
 
 - http://dskernel.blogspot.com/2011/07/understand-main-loop-of-message-passing.html
 - http://cw.squyres.com/
+- http://blogs.cisco.com/performance/
 - http://www.parawiki.org/index.php/Message_Passing_Interface#Peer_to_Peer_Communication
 
 # Funding
@@ -121,7 +157,7 @@ Doctoral Award to S.B., Canadian Institutes of Health Research (CIHR)
 http://boisvert.info
 http://github.com/sebhtml
 http://twitter.com/sebhtml
-
+http://raytrek.com
 
 ## Mentoring:
 

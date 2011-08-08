@@ -156,11 +156,12 @@ void MessageProcessor::call_RAY_MPI_TAG_GET_READ_MATE(Message*message){
 		int readId=buffer[i];
 		Read*read=m_myReads->at(readId);
 		int readLength=read->length();
+		/** data: readLength, rank, id, library */
 		outgoingMessage[j++]=readLength;
 		if(!read->hasPairedRead()){
-			outgoingMessage[j++]=-1;
-			outgoingMessage[j++]=-1;
-			outgoingMessage[j++]=-1;
+			outgoingMessage[j++]=MAX_NUMBER_OF_MPI_PROCESSES;
+			outgoingMessage[j++]=MAX_NUMBER_OF_MPI_PROCESSES;
+			outgoingMessage[j++]=MAX_NUMBER_OF_MPI_PROCESSES;
 		}else{
 			PairedRead*mate=read->getPairedRead();
 			outgoingMessage[j++]=mate->getRank();
@@ -455,6 +456,12 @@ void MessageProcessor::call_RAY_MPI_TAG_VERTICES_DATA(Message*message){
 		}
 		
 		KmerCandidate*candidate=m_subgraph->getKmerAcademy()->find(&l);
+
+		/** the candidate remained in the Bloom filter ! , good.*/
+		if(candidate == NULL){
+			continue;
+		}
+
 		#ifdef ASSERT
 		assert(candidate!=NULL);
 		#endif
@@ -487,6 +494,8 @@ void MessageProcessor::call_RAY_MPI_TAG_WRITE_KMERS(Message*message){
 
 void MessageProcessor::call_RAY_MPI_TAG_PURGE_NULL_EDGES(Message*message){
 	m_subgraph->getKmerAcademy()->destructor();
+	m_bloomFilter.destructor();
+
 	m_subgraph->completeResizing();
 
 	printf("Rank %i has %i vertices (completed)\n",m_rank,(int)m_subgraph->size());
@@ -544,6 +553,7 @@ void MessageProcessor::call_RAY_MPI_TAG_OUT_EDGES_DATA(Message*message){
 
 void MessageProcessor::call_RAY_MPI_TAG_START_VERTICES_DISTRIBUTION(Message*message){
 	(*m_mode)=RAY_SLAVE_MODE_BUILD_KMER_ACADEMY;
+	m_bloomFilter.constructor();
 }
 
 void MessageProcessor::call_RAY_MPI_TAG_IN_EDGES_DATA_REPLY(Message*message){
@@ -1746,6 +1756,7 @@ void MessageProcessor::call_RAY_MPI_TAG_KMER_ACADEMY_DATA(Message*message){
 	uint64_t*incoming=(uint64_t*)buffer;
 
 	for(int i=0;i<count;i+=KMER_U64_ARRAY_SIZE){
+		/** the Kmer l is the lower between l and revcomp(l) */
 		Kmer l;
 		int pos=i;
 		l.unpack(incoming,&pos);
@@ -1762,13 +1773,28 @@ void MessageProcessor::call_RAY_MPI_TAG_KMER_ACADEMY_DATA(Message*message){
 			m_subgraph->getKmerAcademy()->printStatistics();
 		}
 
+		if(!m_bloomFilter.hasValue(&l)){
+/*
+			cout<<"inserting in Bloom filter: "<<endl;
+			l.print();
+*/
+
+			m_bloomFilter.insertValue(&l);
+			continue;
+		}
+
+		/** the Kmer object is in the BloomFilter */
+
 		KmerCandidate*tmp=m_subgraph->insertInAcademy(&l);
 		#ifdef ASSERT
 		assert(tmp!=NULL);
 		#endif
+
+		/** start at 1 since this step was avoided by the BloomFilter */
 		if(m_subgraph->insertedInAcademy()){
-			tmp->m_count=0;
+			tmp->m_count=1;
 		}
+
 		COVERAGE_TYPE oldValue=tmp->m_count;
 		if(tmp->m_lowerKey==l)
 			tmp->m_count++;
@@ -1838,7 +1864,7 @@ void MessageProcessor::call_RAY_MPI_TAG_REQUEST_READ_SEQUENCE_REPLY(Message*mess
 	int length=incoming[4];
 	uint8_t*sequence=(uint8_t*)(incoming+5);
 	Read tmp(sequence,length);
-	seedExtender->m_receivedString=tmp.getSeq(false);
+	seedExtender->m_receivedString=tmp.getSeq();
 	seedExtender->m_sequenceReceived=true;
 }
 
