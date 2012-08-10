@@ -27,25 +27,25 @@ PREFIX=install-prefix
 # 96 nucleotides are stored on 3x64 bits
 # Intermediate values should utilise intermediate numbers of bits.
 # There is no maximum value for MAXKMERLENGTH
-MAXKMERLENGTH = 32
+export MAXKMERLENGTH = 32
 
 # support for .gz files
 # needs libz
 # set to no if you don't have libz
 # y/n
-HAVE_LIBZ = n
+export HAVE_LIBZ = y
 
 # support for .bz2 files
 # needs libbz2
 # set to no if you don't have libbz2
 # y/n
-HAVE_LIBBZ2 = n
+export HAVE_LIBBZ2 = n
 
 # use Intel's compiler
 # the name of the Intel MPI C++ compiler is mpiicpc
 # Open-MPI and MPICH2 utilise mpic++ for the name.
 # y/n
-INTEL_COMPILER = n
+export INTEL_COMPILER = n
 
 # pack structures to reduce memory usage
 # will work on x86 and x86_64
@@ -57,12 +57,12 @@ INTEL_COMPILER = n
 # Seems to fail or be very slow on Intel Xeon too.
 #
 # y/n
-FORCE_PACKING = n
+export FORCE_PACKING = n
 
 # compile assertions
 # Ray may be faster when ASSERT=n
 # y/n
-ASSERT = n
+export ASSERT = n
 
 # collect profiling information with -run-profiler
 # if set to n, the code is not even compiled in
@@ -76,16 +76,16 @@ CONFIG_CLOCK_GETTIME=n
 uname_S := $(shell sh -c 'uname -s 2>/dev/null || echo not')
 
 # optimize
-OPTIMIZE = y
+export OPTIMIZE = y
 
 # add -g to gcc
 # see "Is there a downside to leaving in debug symbols in release builds?"
 # http://stackoverflow.com/questions/5569644/is-there-a-downside-to-leaving-in-debug-symbols-in-release-builds
 # in short: the executable is larger, but symbols are in a different section (thus the code is not slower)
-DEBUG = n
+export DEBUG = y
 
 # profiling
-GPROF = n
+export GPROF = n
 
 ifeq ($(GPROF),y)
 	OPTIMIZE = n
